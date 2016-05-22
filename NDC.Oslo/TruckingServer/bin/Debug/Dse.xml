@@ -1,0 +1,2704 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Dse</name>
+    </assembly>
+    <members>
+        <member name="T:Dse.Auth.BaseAuthenticator">
+            <summary>
+            Base class for Authenticator implementations that want to make use of
+            the authentication scheme negotiation in the DseAuthenticator
+            </summary>
+        </member>
+        <member name="T:Dse.Auth.DseGssapiAuthProvider">
+            <summary>
+            Provides GSSAPI authenticator instances for clients to connect to DSE clusters secured with the
+            DseAuthenticator.
+            </summary>
+        </member>
+        <member name="M:Dse.Auth.DseGssapiAuthProvider.#ctor(System.String,System.Func{System.Net.IPEndPoint,System.String})">
+            <summary>
+            Creates a new instance of <see cref="T:Dse.Auth.DseGssapiAuthProvider"/>.
+            </summary>
+            <param name="service">Name of the service. Defaults to "dse"</param>
+            <param name="hostNameResolver">
+            Method to resolve the host name given the endpoint. Defaults to <see cref="M:Dse.Auth.DseGssapiAuthProvider.UseIpResolver(System.Net.IPEndPoint)"/>.
+            </param>
+        </member>
+        <member name="M:Dse.Auth.DseGssapiAuthProvider.NewAuthenticator(System.Net.IPEndPoint)">
+            <summary>
+            Returns a new <see cref="T:Cassandra.IAuthenticator"/> instance to handle authentication for a given endpoint.
+            </summary>
+            <exception cref="T:Cassandra.AuthenticationException">When the host name can not be resolved.</exception>
+        </member>
+        <member name="M:Dse.Auth.DseGssapiAuthProvider.SetName(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Dse.Auth.DseGssapiAuthProvider.UseIpResolver(System.Net.IPEndPoint)">
+            <summary>
+            Returns the IP address of the endpoint as a string.
+            </summary>
+        </member>
+        <member name="M:Dse.Auth.DseGssapiAuthProvider.ReverseDnsResolver(System.Net.IPEndPoint)">
+            <summary>
+            Performs a reverse DNS query that resolves an IPv4 or IPv6 address to a hostname.
+            </summary>
+        </member>
+        <member name="T:Dse.Auth.DsePlainTextAuthProvider">
+            <summary>
+            AuthProvider that provides plain text authenticator instances for clients to connect 
+            to DSE clusters secured with the DseAuthenticator.
+            </summary>
+            <example>
+            Creating a auth-enabled Cluster instance:
+            <code>
+            var cluster = DseCluster.Builder()
+                .AddContactPoint(h1)
+                .WithAuthProvider(new DsePlainTextAuthProvider("user", "p@sword1"))
+                .Build();
+            </code>
+            </example>
+        </member>
+        <member name="M:Dse.Auth.DsePlainTextAuthProvider.#ctor(System.String,System.String)">
+            <summary>
+            Creates a new instance of <see cref="T:Dse.Auth.DsePlainTextAuthProvider"/>
+            </summary>
+        </member>
+        <member name="M:Dse.Auth.DsePlainTextAuthProvider.NewAuthenticator(System.Net.IPEndPoint)">
+            <inheritdoc />
+        </member>
+        <member name="M:Dse.Auth.DsePlainTextAuthProvider.SetName(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="T:Dse.Auth.Sspi.Buffers.SecureBufferInternal">
+            <summary>
+            Represents a native SecureBuffer structure, which is used for communicating
+            buffers to the native APIs.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Buffers.SecureBufferInternal.Count">
+            <summary>
+            When provided to the native API, the total number of bytes available in the buffer.
+            On return from the native API, the number of bytes that were filled or used by the
+            native API.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Buffers.SecureBufferInternal.Type">
+            <summary>
+            The type or purpose of the buffer.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Buffers.SecureBufferInternal.Buffer">
+            <summary>
+            An pointer to a pinned byte[] buffer.
+            </summary>
+        </member>
+        <member name="T:Dse.Auth.Sspi.Buffers.SecureBuffer">
+            <summary>
+            Stores buffers to provide tokens and data to the native SSPI APIs.
+            </summary>
+            <remarks>The buffer is translated into a SecureBufferInternal for the actual call.
+            To keep the call setup code simple, and to centralize the buffer pinning code,
+            this class stores and returns buffers as regular byte arrays. The buffer 
+            pinning support code in SecureBufferAdapter handles conversion to SecureBufferInternal
+            for pass to the managed api, as well as pinning relevant chunks of memory.
+            
+            Furthermore, the native API may not use the entire buffer, and so a mechanism
+            is needed to communicate the usage of the buffer separate from the length
+            of the buffer.</remarks>
+        </member>
+        <member name="M:Dse.Auth.Sspi.Buffers.SecureBuffer.#ctor(System.Byte[],Dse.Auth.Sspi.Buffers.BufferType)">
+            <summary>
+            Initializes a new instance of the SecureBuffer class.
+            </summary>
+            <param name="buffer">The buffer to wrap.</param>
+            <param name="type">The type or purpose of the buffer, for purposes of 
+            invoking the native API.</param>
+        </member>
+        <member name="P:Dse.Auth.Sspi.Buffers.SecureBuffer.Type">
+            <summary>
+            The type or purposes of the API, for invoking the native API.
+            </summary>
+        </member>
+        <member name="P:Dse.Auth.Sspi.Buffers.SecureBuffer.Buffer">
+            <summary>
+            The buffer to provide to the native API.
+            </summary>
+        </member>
+        <member name="P:Dse.Auth.Sspi.Buffers.SecureBuffer.Length">
+            <summary>
+            The number of elements that were actually filled or used by the native API,
+            which may be less than the total length of the buffer.
+            </summary>
+        </member>
+        <member name="T:Dse.Auth.Sspi.Buffers.SecureBufferAdapter">
+            <summary>
+            Prepares SecureBuffers for providing them to native API calls.
+            </summary>
+            <remarks>
+            The native APIs consume lists of buffers, with each buffer indicating its type or purpose.
+            
+            The buffers themselves are simple byte arrays, and the native APIs consume arrays of buffers.
+            
+            Since winapi calling convention, perhaps as an extension of C calling convention, does not
+            provide a standard convention means of communicating the length of any array, custom structures
+            must be created to carry the buffer length and usage.
+            
+            Not only does the API need to know how long each buffer is, and how long the array of buffers is,
+            it needs to communicate back how much of each buffer was filled; we may provide it a token buffer
+            that is 12288 bytes long, but it might only use 125 bytes of that, which we need a way of knowing.
+            
+            As a result of this, the API requires byte arrays to be carried in structs that are natively known as 
+            SecureBuffers (known as SecureBufferInternal in this project), and then arrays of SecureBuffers are
+            carried in a SecureBufferDescriptor structure.
+            
+            As such, this class has to do a significant amount of marshaling work just to get the buffers back and
+            forth to the native APIs.
+              * We have to pin all buffers
+              * We have to pin the array of buffers
+              * We have to obtain IntPtr handles to each of the buffers and to the array of buffers.
+              * Since we provide EasyToUse SecureBuffer classes from the rest of the project, but we 
+                provide SecureBufferInternal structures from the native API, we have to copy back values
+                from the SecureBufferInternal structs to our SecureBuffer class.
+                
+            To make this class easy to use, it accepts either one or many buffers as its constructor; and
+            implements IDisposable to know when to marshal values back from the unmanaged structures and to 
+            release pinned handles. 
+            
+            Additionally, in case the adapter is leaked without disposing, the adapter implements a Critical
+            Finalizer, to ensure that the GCHandles are released, else we will permanently pin handles.
+            
+            The typical flow is to take one or many buffers; create and fill the neccessary unmanaged structures;
+            pin memory; acquire the IntPtr handles; let the caller access the top-level IntPtr representing
+            the SecureBufferDescriptor, to provide to the native APIs; wait for the caller to invoke the native
+            API; wait for the caller to invoke our Dispose; marshal back any data from the native structures
+            (buffer write counts); release all GCHandles to unpin memory.
+            
+            The total descriptor structure is as follows:
+            |-- Descriptor handle 
+                |-- Array of buffers
+                    |-- Buffer 1
+                    |-- Buffer 2
+                    ...
+                    |-- Buffer N.
+                    
+            Each object in that structure must be pinned and passed as an IntPtr to the native APIs. 
+            All this to pass what boils down to a List of byte arrays..
+            </remarks>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Buffers.SecureBufferAdapter.disposed">
+            <summary>
+            Whether the adapter has already been disposed.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Buffers.SecureBufferAdapter.buffers">
+            <summary>
+            The list of mananged SecureBuffers the caller provided to us.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Buffers.SecureBufferAdapter.descriptorHandle">
+            <summary>
+            The top level handle representing the entire descriptor.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Buffers.SecureBufferAdapter.bufferCarrierHandle">
+            <summary>
+            The handle representing the array of buffers.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Buffers.SecureBufferAdapter.bufferHandles">
+            <summary>
+            The handles representing each actual buffer.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Buffers.SecureBufferAdapter.descriptor">
+            <summary>
+            The native buffer descriptor
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Buffers.SecureBufferAdapter.bufferCarrier">
+            <summary>
+            An array of the native buffers.
+            </summary>
+        </member>
+        <member name="M:Dse.Auth.Sspi.Buffers.SecureBufferAdapter.#ctor(Dse.Auth.Sspi.Buffers.SecureBuffer)">
+            <summary>
+            Initializes a SecureBufferAdapter to carry a single buffer to the native api.
+            </summary>
+            <param name="buffer"></param>
+        </member>
+        <member name="M:Dse.Auth.Sspi.Buffers.SecureBufferAdapter.#ctor(System.Collections.Generic.IList{Dse.Auth.Sspi.Buffers.SecureBuffer})">
+            <summary>
+            Initializes the SecureBufferAdapter to carry a list of buffers to the native api.
+            </summary>
+            <param name="buffers"></param>
+        </member>
+        <member name="M:Dse.Auth.Sspi.Buffers.SecureBufferAdapter.Dispose">
+            <summary>
+            Completes any buffer passing marshaling and releases all resources associated with the adapter.
+            </summary>
+        </member>
+        <member name="M:Dse.Auth.Sspi.Buffers.SecureBufferAdapter.Dispose(System.Boolean)">
+            <summary>
+            Completes any buffer passing marshaling and releases all resources associated with the adapter.
+            This may be called by the finalizer, or by the regular Dispose method. In the case of the finalizer,
+            we've been leaked and there's no point in attempting to marshal back data from the native structures,
+            nor should we anyway since they may be gone.
+            </summary>
+            <param name="disposing">Whether Dispose is being called.</param>
+        </member>
+        <member name="P:Dse.Auth.Sspi.Buffers.SecureBufferAdapter.Handle">
+            <summary>
+            Gets the top-level pointer to the secure buffer descriptor to pass to the native API.
+            </summary>
+        </member>
+        <member name="T:Dse.Auth.Sspi.Buffers.SecureBufferDataRep">
+            <summary>
+            Describes how a buffer's opaque internals should be stored, with regards to byte ordering.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Buffers.SecureBufferDataRep.Native">
+            <summary>
+            Buffers internals are to be stored in the machine native byte order, which will change depending on
+            what machine generated the buffer.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Buffers.SecureBufferDataRep.Network">
+            <summary>
+            Buffers are stored in network byte ordering, that is, big endian format.
+            </summary>
+        </member>
+        <member name="T:Dse.Auth.Sspi.Buffers.SecureBufferDescInternal">
+            <summary>
+            Represents the native layout of the secure buffer descriptor that is provided directly
+            to native API calls.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Buffers.SecureBufferDescInternal.ApiVersion">
+            <summary>
+            Indicates the buffer structure version supported by this structure. Always 0.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Buffers.SecureBufferDescInternal.Version">
+            <summary>
+            The buffer structure version.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Buffers.SecureBufferDescInternal.NumBuffers">
+            <summary>
+            The number of buffers represented by this descriptor.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Buffers.SecureBufferDescInternal.Buffers">
+            <summary>
+            A pointer to a array of buffers, where each buffer is a byte[].
+            </summary>
+        </member>
+        <member name="T:Dse.Auth.Sspi.Buffers.BufferType">
+            <summary>
+            Describes the type and purpose of a secure buffer passed to the native API.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Buffers.BufferType.Empty">
+            <summary>
+            The buffer is empty.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Buffers.BufferType.Data">
+            <summary>
+            The buffer contains message data. Message data can be plaintext or cipher text data.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Buffers.BufferType.Token">
+            <summary>
+            The buffer contains opaque authentication token data.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Buffers.BufferType.Parameters">
+            <summary>
+            The buffer contains parameters specific to the security package.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Buffers.BufferType.Missing">
+            <summary>
+            The buffer placeholder indicating that some data is missing.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Buffers.BufferType.Extra">
+            <summary>
+            The buffer passed to an API call contained more data than was necessary for completing the action,
+            such as the case when a streaming-mode connection that does not preserve message bounders, such as TCP 
+            is used as the transport. The extra data is returned back to the caller in a buffer of this type.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Buffers.BufferType.Trailer">
+            <summary>
+            The buffer contains a security data trailer, such as a message signature or marker, or framing data.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Buffers.BufferType.Header">
+            <summary>
+            The buffer contains a security data header, such as a message signature, marker, or framing data.
+            </summary>
+        </member>
+        <member name="T:Dse.Auth.Sspi.ByteWriter">
+            <summary>
+            Reads and writes value types to byte arrays with explicit endianness.
+            </summary>
+        </member>
+        <member name="M:Dse.Auth.Sspi.ByteWriter.WriteInt16_BE(System.Int16,System.Byte[],System.Int32)">
+            <summary>
+            Writes a 2-byte signed integer to the buffer in big-endian format.
+            </summary>
+            <param name="value">The value to write to the buffer.</param>
+            <param name="buffer">The buffer to write to.</param>
+            <param name="position">The index of the first byte to write to.</param>
+        </member>
+        <member name="M:Dse.Auth.Sspi.ByteWriter.WriteInt32_BE(System.Int32,System.Byte[],System.Int32)">
+            <summary>
+            Writes a 4-byte signed integer to the buffer in big-endian format.
+            </summary>
+            <param name="value">The value to write to the buffer.</param>
+            <param name="buffer">The buffer to write to.</param>
+            <param name="position">The index of the first byte to write to.</param>
+        </member>
+        <member name="M:Dse.Auth.Sspi.ByteWriter.ReadInt16_BE(System.Byte[],System.Int32)">
+            <summary>
+            Reads a 2-byte signed integer that is stored in the buffer in big-endian format.
+            The returned value is in the native endianness.
+            </summary>
+            <param name="buffer">The buffer to read.</param>
+            <param name="position">The index of the first byte to read.</param>
+            <returns></returns>
+        </member>
+        <member name="M:Dse.Auth.Sspi.ByteWriter.ReadInt32_BE(System.Byte[],System.Int32)">
+            <summary>
+            Reads a 4-byte signed integer that is stored in the buffer in big-endian format.
+            The returned value is in the native endianness.
+            </summary>
+            <param name="buffer">The buffer to read.</param>
+            <param name="position">The index of the first byte to read.</param>
+            <returns></returns>
+        </member>
+        <member name="T:Dse.Auth.Sspi.Contexts.ClientContext">
+            <summary>
+            Represents a client security context. Provides the means to establish a shared security context
+            with the server and to encrypt, decrypt, sign and verify messages to and from the server.
+            </summary>
+            <remarks>
+            A client and server establish a shared security context by exchanging authentication tokens. Once 
+            the shared context is established, the client and server can pass messages to each other, encrypted,
+            signed, etc, using the established parameters of the shared context.
+            </remarks>
+        </member>
+        <member name="T:Dse.Auth.Sspi.Contexts.Context">
+            <summary>
+            Represents a security context and provides common functionality required for all security 
+            contexts.
+            </summary>
+            <remarks>
+            This class is abstract and has a protected constructor and Initialize method. The exact 
+            initialization implementation is provided by a subclasses, which may perform initialization 
+            in a variety of manners.
+            </remarks>
+        </member>
+        <member name="M:Dse.Auth.Sspi.Contexts.Context.#ctor(Dse.Auth.Sspi.Credentials.Credential)">
+            <summary>
+            Performs basic initialization of a new instance of the Context class.
+            Initialization is not complete until the ContextHandle property has been set
+            and the Initialize method has been called.
+            </summary>
+            <param name="cred"></param>
+        </member>
+        <member name="M:Dse.Auth.Sspi.Contexts.Context.Initialize(System.DateTime)">
+            <summary>
+            Marks the context as having completed the initialization process, ie, exchanging of authentication tokens.
+            </summary>
+            <param name="expiry">The date and time that the context will expire.</param>
+        </member>
+        <member name="M:Dse.Auth.Sspi.Contexts.Context.Dispose">
+            <summary>
+            Releases all resources associated with the context.
+            </summary>
+        </member>
+        <member name="M:Dse.Auth.Sspi.Contexts.Context.Dispose(System.Boolean)">
+            <summary>
+            Releases resources associated with the context.
+            </summary>
+            <param name="disposing">If true, release managed resources, else release only unmanaged resources.</param>
+        </member>
+        <member name="M:Dse.Auth.Sspi.Contexts.Context.Encrypt(System.Byte[])">
+            <summary>
+            Encrypts the byte array using the context's session key.
+            </summary>
+            <remarks>
+            The structure of the returned data is as follows:
+             - 2 bytes, an unsigned big-endian integer indicating the length of the trailer buffer size
+             - 4 bytes, an unsigned big-endian integer indicating the length of the message buffer size.
+             - 2 bytes, an unsigned big-endian integer indicating the length of the encryption padding buffer size.
+             - The trailer buffer
+             - The message buffer
+             - The padding buffer.
+            </remarks>
+            <param name="input">The raw message to encrypt.</param>
+            <returns>The packed and encrypted message.</returns>
+        </member>
+        <member name="M:Dse.Auth.Sspi.Contexts.Context.Decrypt(System.Byte[])">
+            <summary>
+            Decrypts a previously encrypted message.
+            </summary>
+            <remarks>
+            The expected format of the buffer is as follows:
+             - 2 bytes, an unsigned big-endian integer indicating the length of the trailer buffer size
+             - 4 bytes, an unsigned big-endian integer indicating the length of the message buffer size.
+             - 2 bytes, an unsigned big-endian integer indicating the length of the encryption padding buffer size.
+             - The trailer buffer
+             - The message buffer
+             - The padding buffer.
+            </remarks>
+            <param name="input">The packed and encrypted data.</param>
+            <returns>The original plaintext message.</returns>
+        </member>
+        <member name="M:Dse.Auth.Sspi.Contexts.Context.MakeSignature(System.Byte[])">
+            <summary>
+            Signs the message using the context's session key.
+            </summary>
+            <remarks>
+            The structure of the returned buffer is as follows:
+             - 4 bytes, unsigned big-endian integer indicating the length of the plaintext message
+             - 2 bytes, unsigned big-endian integer indicating the length of the signture
+             - The plaintext message
+             - The message's signature.
+            </remarks>
+            <param name="message"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Dse.Auth.Sspi.Contexts.Context.VerifySignature(System.Byte[],System.Byte[]@)">
+            <summary>
+            Verifies the signature of a signed message
+            </summary>
+            <remarks>
+            The expected structure of the signed message buffer is as follows:
+             - 4 bytes, unsigned integer in big endian format indicating the length of the plaintext message
+             - 2 bytes, unsigned integer in big endian format indicating the length of the signture
+             - The plaintext message
+             - The message's signature.
+            </remarks>
+            <param name="signedMessage">The packed signed message.</param>
+            <param name="origMessage">The extracted original message.</param>
+            <returns>True if the message has a valid signature, false otherwise.</returns>
+        </member>
+        <member name="M:Dse.Auth.Sspi.Contexts.Context.QueryBufferSizes">
+            <summary>
+            Queries the security package's expections regarding message/token/signature/padding buffer sizes.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:Dse.Auth.Sspi.Contexts.Context.QueryContextString(Dse.Auth.Sspi.Contexts.ContextQueryAttrib)">
+            <summary>
+            Queries a string-valued context attribute by the named attribute.
+            </summary>
+            <param name="attrib">The string-valued attribute to query.</param>
+            <returns></returns>
+        </member>
+        <member name="M:Dse.Auth.Sspi.Contexts.Context.CheckLifecycle">
+            <summary>
+            Verifies that the object's lifecycle (initialization / disposition) state is suitable for using the 
+            object.
+            </summary>
+        </member>
+        <member name="P:Dse.Auth.Sspi.Contexts.Context.Initialized">
+            <summary>
+            Whether or not the context is fully formed.
+            </summary>
+        </member>
+        <member name="P:Dse.Auth.Sspi.Contexts.Context.Credential">
+            <summary>
+            The credential being used by the context to authenticate itself to other actors.
+            </summary>
+        </member>
+        <member name="P:Dse.Auth.Sspi.Contexts.Context.ContextHandle">
+            <summary>
+            A reference to the security context's handle.
+            </summary>
+        </member>
+        <member name="P:Dse.Auth.Sspi.Contexts.Context.AuthorityName">
+            <summary>
+            The name of the authenticating authority for the context.
+            </summary>
+        </member>
+        <member name="P:Dse.Auth.Sspi.Contexts.Context.ContextUserName">
+            <summary>
+            The logon username that the context represents.
+            </summary>
+        </member>
+        <member name="P:Dse.Auth.Sspi.Contexts.Context.Expiry">
+            <summary>
+            The UTC time when the context expires.
+            </summary>
+        </member>
+        <member name="P:Dse.Auth.Sspi.Contexts.Context.Disposed">
+            <summary>
+            Whether the context has been disposed.
+            </summary>
+        </member>
+        <member name="M:Dse.Auth.Sspi.Contexts.ClientContext.#ctor(Dse.Auth.Sspi.Credentials.ClientCredential,System.String,Dse.Auth.Sspi.Contexts.ContextAttrib)">
+            <summary>
+            Initializes a new instance of the ClientContext class. The context is not fully initialized and usable
+            until the authentication cycle has been completed.
+            </summary>
+            <param name="cred">The security credential to authenticate as.</param>
+            <param name="serverPrinc">The principle name of the server to connect to, or null for any.</param>
+            <param name="requestedAttribs">Requested attributes that describe the desired properties of the
+            context once it is established. If a context cannot be established that satisfies the indicated
+            properties, the context initialization is aborted.</param>
+        </member>
+        <member name="M:Dse.Auth.Sspi.Contexts.ClientContext.Init(System.Byte[],System.Byte[]@)">
+            <summary>
+            Performs and continues the authentication cycle.
+            </summary>
+            <remarks>
+            This method is performed iteratively to start, continue, and end the authentication cycle with the
+            server. Each stage works by acquiring a token from one side, presenting it to the other side
+            which in turn may generate a new token.
+            
+            The cycle typically starts and ends with the client. On the first invocation on the client,
+            no server token exists, and null is provided in its place. The client returns its status, providing
+            its output token for the server. The server accepts the clients token as input and provides a 
+            token as output to send back to the client. This cycle continues until the server and client 
+            both indicate, typically, a SecurityStatus of 'OK'.
+            </remarks>
+            <param name="serverToken">The most recently received token from the server, or null if beginning
+            the authentication cycle.</param>
+            <param name="outToken">The clients next authentication token in the authentication cycle.</param>
+            <returns>A status message indicating the progression of the authentication cycle.
+            A status of 'OK' indicates that the cycle is complete, from the client's perspective. If the outToken
+            is not null, it must be sent to the server.
+            A status of 'Continue' indicates that the output token should be sent to the server and 
+            a response should be anticipated.</returns>
+        </member>
+        <member name="T:Dse.Auth.Sspi.Contexts.ContextAttrib">
+            <summary>
+            Defines options for creating a security context via win32 InitializeSecurityContext 
+            (used by clients) and AcceptSecurityContext (used by servers).
+            Required attribute flags are specified when creating the context. InitializeSecurityContext
+            and AcceptSecurityContext returns a value indicating what final attributes the created context 
+            actually has.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Contexts.ContextAttrib.Zero">
+            <summary>
+            No additional attributes are provided.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Contexts.ContextAttrib.Delegate">
+            <summary>
+            The server can use the context to authenticate to other servers as the client. The
+            MutualAuth flag must be set for this flag to work. Valid for Kerberos. Ignore this flag for 
+            constrained delegation.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Contexts.ContextAttrib.MutualAuth">
+            <summary>
+            The mutual authentication policy of the service will be satisfied.
+            *Caution* - This does not necessarily mean that mutual authentication is performed, only that
+            the authentication policy of the service is satisfied. To ensure that mutual authentication is
+            performed, query the context attributes after it is created.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Contexts.ContextAttrib.ReplayDetect">
+            <summary>
+            Detect replayed messages that have been encoded by using the EncryptMessage or MakeSignature 
+            message support functionality.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Contexts.ContextAttrib.SequenceDetect">
+            <summary>
+            Detect messages received out of sequence when using the message support functionality. 
+            This flag implies all of the conditions specified by the Integrity flag - out-of-order sequence 
+            detection can only be trusted if the integrity of any underlying sequence detection mechanism 
+            in transmitted data can be trusted.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Contexts.ContextAttrib.Confidentiality">
+            <summary>
+            The context must protect data while in transit. Encrypt messages by using the EncryptMessage function.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Contexts.ContextAttrib.UseSessionKey">
+            <summary>
+            A new session key must be negotiated.
+            This value is supported only by the Kerberos security package.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Contexts.ContextAttrib.AllocateMemory">
+            <summary>
+            The security package allocates output buffers for you. Buffers allocated by the security package have 
+            to be released by the context memory management functions.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Contexts.ContextAttrib.Connection">
+            <summary>
+            The security context will not handle formatting messages. This value is the default for the Kerberos, 
+            Negotiate, and NTLM security packages.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Contexts.ContextAttrib.InitExtendedError">
+            <summary>
+            When errors occur, the remote party will be notified.
+            </summary>
+            <remarks>
+            A client specifies InitExtendedError in InitializeSecurityContext
+            and the server specifies AcceptExtendedError in AcceptSecurityContext. 
+            </remarks>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Contexts.ContextAttrib.AcceptExtendedError">
+            <summary>
+            When errors occur, the remote party will be notified.
+            </summary>
+            <remarks>
+            A client specifies InitExtendedError in InitializeSecurityContext
+            and the server specifies AcceptExtendedError in AcceptSecurityContext. 
+            </remarks>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Contexts.ContextAttrib.InitStream">
+            <summary>
+            Support a stream-oriented connection. Provided by clients.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Contexts.ContextAttrib.AcceptStream">
+            <summary>
+            Support a stream-oriented connection. Provided by servers.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Contexts.ContextAttrib.InitIntegrity">
+            <summary>
+            Sign messages and verify signatures by using the EncryptMessage and MakeSignature functions.
+            Replayed and out-of-sequence messages will not be detected with the setting of this attribute.
+            Set ReplayDetect and SequenceDetect also if these behaviors are desired.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Contexts.ContextAttrib.AcceptIntegrity">
+            <summary>
+            Sign messages and verify signatures by using the EncryptMessage and MakeSignature functions.
+            Replayed and out-of-sequence messages will not be detected with the setting of this attribute.
+            Set ReplayDetect and SequenceDetect also if these behaviors are desired.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Contexts.ContextAttrib.InitManualCredValidation">
+            <summary>
+            An Schannel provider connection is instructed to not authenticate the server automatically.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Contexts.ContextAttrib.InitUseSuppliedCreds">
+            <summary>
+            An Schannel provider connection is instructed to not authenticate the client automatically.
+            </summary>
+        </member>
+        <member name="T:Dse.Auth.Sspi.Contexts.ContextNativeMethods">
+            <summary>
+            Declares native methods calls for security context-related win32 functions.
+            </summary>
+        </member>
+        <member name="M:Dse.Auth.Sspi.Contexts.ContextNativeMethods.SafeEncryptMessage(Dse.Auth.Sspi.Contexts.SafeContextHandle,System.Int32,Dse.Auth.Sspi.Buffers.SecureBufferAdapter,System.Int32)">
+            <summary>
+            Safely invokes the native EncryptMessage function, making sure that handle ref counting is 
+            performed in a proper CER.
+            </summary>
+            <param name="handle"></param>
+            <param name="qualityOfProtection"></param>
+            <param name="bufferAdapter"></param>
+            <param name="sequenceNumber"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Dse.Auth.Sspi.Contexts.ContextNativeMethods.SafeDecryptMessage(Dse.Auth.Sspi.Contexts.SafeContextHandle,System.Int32,Dse.Auth.Sspi.Buffers.SecureBufferAdapter,System.Int32)">
+            <summary>
+            Safely invokes the native DecryptMessage function, making sure that handle ref counting is 
+            performed in a proper CER.
+            </summary>
+            <param name="handle"></param>
+            <param name="qualityOfProtection"></param>
+            <param name="bufferAdapter"></param>
+            <param name="sequenceNumber"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Dse.Auth.Sspi.Contexts.ContextNativeMethods.SafeMakeSignature(Dse.Auth.Sspi.Contexts.SafeContextHandle,System.Int32,Dse.Auth.Sspi.Buffers.SecureBufferAdapter,System.Int32)">
+            <summary>
+            Safely invokes the native MakeSignature function, making sure that handle ref counting is 
+            performed in a proper CER.
+            </summary>
+            <param name="handle"></param>
+            <param name="qualityOfProtection"></param>
+            <param name="adapter"></param>
+            <param name="sequenceNumber"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Dse.Auth.Sspi.Contexts.ContextNativeMethods.SafeVerifySignature(Dse.Auth.Sspi.Contexts.SafeContextHandle,System.Int32,Dse.Auth.Sspi.Buffers.SecureBufferAdapter,System.Int32)">
+            <summary>
+            Safely invokes the native VerifySignature function, making sure that handle ref counting is 
+            performed in a proper CER.
+            </summary>
+            <param name="handle"></param>
+            <param name="qualityOfProtection"></param>
+            <param name="adapter"></param>
+            <param name="sequenceNumber"></param>
+            <returns></returns>
+        </member>
+        <member name="T:Dse.Auth.Sspi.Contexts.SecPkgContext_Sizes">
+            <summary>
+            Stores the result of a context query for the context's buffer sizes.
+            </summary>
+        </member>
+        <member name="T:Dse.Auth.Sspi.Contexts.SecPkgContext_String">
+            <summary>
+            Stores the result of a context query for a string-valued context attribute.
+            </summary>
+        </member>
+        <member name="T:Dse.Auth.Sspi.Contexts.ContextQueryAttrib">
+            <summary>
+            Defines the types of queries that can be performed with QueryContextAttribute.
+            Each query has a different result buffer.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Contexts.ContextQueryAttrib.Sizes">
+            <summary>
+            Queries the buffer size parameters when performing message functions, such
+            as encryption, decryption, signing and signature validation.
+            </summary>
+            <remarks>
+            Results for a query of this type are stored in a Win32 SecPkgContext_Sizes structure.
+            </remarks>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Contexts.ContextQueryAttrib.Names">
+            <summary>
+            Queries the context for the name of the user assocated with a security context.
+            </summary>
+            <remarks>
+            Results for a query of this type are stored in a Win32 SecPkgContext_Name structure.
+            </remarks>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Contexts.ContextQueryAttrib.Authority">
+            <summary>
+            Queries the name of the authenticating authority for the security context.
+            </summary>
+            <remarks>
+            Results for a query of this type are stored in a Win32 SecPkgContext_Authority structure.
+            </remarks>
+        </member>
+        <member name="T:Dse.Auth.Sspi.Contexts.SafeContextHandle">
+            <summary>
+            Captures an unmanaged security context handle.
+            </summary>
+        </member>
+        <member name="T:Dse.Auth.Sspi.SafeSspiHandle">
+            <summary>
+            Safely encapsulates a raw handle used in the SSPI api.
+            </summary>
+        </member>
+        <member name="T:Dse.Auth.Sspi.Credentials.ClientCredential">
+            <summary>
+            Represents the credentials of the user running the current process, for use as an SSPI client.
+            </summary>
+        </member>
+        <member name="T:Dse.Auth.Sspi.Credentials.CurrentCredential">
+            <summary>
+            Acquires a handle to the credentials of the user associated with the current process.
+            </summary>
+        </member>
+        <member name="T:Dse.Auth.Sspi.Credentials.Credential">
+            <summary>
+            Provides access to the pre-existing credentials of a security principle.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Credentials.Credential.disposed">
+            <summary>
+            Whether the Credential has been disposed.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Credentials.Credential.securityPackage">
+            <summary>
+            The name of the security package that controls the credential.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Credentials.Credential.safeCredHandle">
+            <summary>
+            A safe handle to the credential's handle.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Credentials.Credential.expiry">
+            <summary>
+            The UTC time the credentials expire.
+            </summary>
+        </member>
+        <member name="M:Dse.Auth.Sspi.Credentials.Credential.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the Credential class.
+            </summary>
+            <param name="package">The security package to acquire the credential from.</param>
+        </member>
+        <member name="M:Dse.Auth.Sspi.Credentials.Credential.Dispose">
+            <summary>
+            Releases all resources associated with the credential.
+            </summary>
+        </member>
+        <member name="P:Dse.Auth.Sspi.Credentials.Credential.PackageInfo">
+            <summary>
+            Gets metadata for the security package associated with the credential.
+            </summary>
+        </member>
+        <member name="P:Dse.Auth.Sspi.Credentials.Credential.SecurityPackage">
+            <summary>
+            Gets the name of the security package that owns the credential.
+            </summary>
+        </member>
+        <member name="P:Dse.Auth.Sspi.Credentials.Credential.PrincipleName">
+            <summary>
+            Returns the User Principle Name of the credential. Depending on the underlying security
+            package used by the credential, this may not be the same as the Down-Level Logon Name
+            for the user.
+            </summary>
+        </member>
+        <member name="P:Dse.Auth.Sspi.Credentials.Credential.Expiry">
+            <summary>
+            Gets the UTC time the credentials expire.
+            </summary>
+        </member>
+        <member name="P:Dse.Auth.Sspi.Credentials.Credential.Handle">
+            <summary>
+            Gets a handle to the credential.
+            </summary>
+        </member>
+        <member name="M:Dse.Auth.Sspi.Credentials.CurrentCredential.#ctor(System.String,Dse.Auth.Sspi.Credentials.CredentialUse)">
+            <summary>
+            Initializes a new instance of the CurrentCredential class.
+            </summary>
+            <param name="securityPackage">The security package to acquire the credential handle
+            from.</param>
+            <param name="use">The manner in which the credentials will be used - Inbound typically
+            represents servers, outbound typically represent clients.</param>
+        </member>
+        <member name="M:Dse.Auth.Sspi.Credentials.ClientCredential.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the ClientCredential class.
+            </summary>
+            <param name="package">The security package to acquire the credential handle from.</param>
+        </member>
+        <member name="M:Dse.Auth.Sspi.Credentials.CredentialNativeMethods.QueryCredentialsAttribute_Name(Dse.Auth.Sspi.RawSspiHandle@,Dse.Auth.Sspi.Credentials.CredentialQueryAttrib,Dse.Auth.Sspi.Credentials.QueryNameAttribCarrier@)">
+            <summary>
+            The overload of the QueryCredentialsAttribute method that is used for querying the name attribute.
+            In this call, it takes a void* to a structure that contains a wide char pointer. The wide character
+            pointer is allocated by the SSPI api, and thus needs to be released by a call to FreeContextBuffer().
+            </summary>
+            <param name="credentialHandle"></param>
+            <param name="attributeName"></param>
+            <param name="name"></param>
+            <returns></returns>
+        </member>
+        <member name="T:Dse.Auth.Sspi.Credentials.CredentialQueryAttrib">
+            <summary>
+            Identifies credential query types.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Credentials.CredentialQueryAttrib.Names">
+            <summary>
+            Queries the credential's principle name.
+            </summary>
+        </member>
+        <member name="T:Dse.Auth.Sspi.Credentials.CredentialUse">
+            <summary>
+            Indicates the manner in which a credential will be used for SSPI authentication.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Credentials.CredentialUse.Inbound">
+            <summary>
+            The credentials will be used for establishing a security context with an inbound request, eg,
+            the credentials will be used by a server building a security context with a client.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Credentials.CredentialUse.Outbound">
+            <summary>
+            The credentials will be used for establishing a security context as an outbound request,
+            eg, the credentials will be used by a client to build a security context with a server.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Credentials.CredentialUse.Both">
+            <summary>
+            The credentials may be used to to either build a client's security context or a server's
+            security context.
+            </summary>
+        </member>
+        <member name="T:Dse.Auth.Sspi.Credentials.QueryNameAttribCarrier">
+            <summary>
+            Stores the result from a query of a credential's principle name.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.Credentials.QueryNameAttribCarrier.Name">
+            <summary>
+            A pointer to a null-terminated ascii-encoded containing the principle name 
+            associated with a credential
+            </summary>
+        </member>
+        <member name="T:Dse.Auth.Sspi.Credentials.SafeCredentialHandle">
+            <summary>
+            Provides a managed handle to an SSPI credential.
+            </summary>
+        </member>
+        <member name="T:Dse.Auth.Sspi.Credentials.ServerCredential">
+            <summary>
+            Represents the credentials of the user running the current process, for use as an SSPI server.
+            </summary>
+        </member>
+        <member name="M:Dse.Auth.Sspi.Credentials.ServerCredential.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the ServerCredential class, acquiring credentials from 
+            the current thread's security context.
+            </summary>
+            <param name="package">The name of the security package to obtain credentials from.</param>
+        </member>
+        <member name="T:Dse.Auth.Sspi.PackageNames">
+            <summary>
+            Provides canonical names for security pacakges.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.PackageNames.Negotiate">
+            <summary>
+            Indicates the Negotiate security package.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.PackageNames.Kerberos">
+            <summary>
+            Indicates the Kerberos security package.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.PackageNames.Ntlm">
+            <summary>
+            Indicates the NTLM security package.
+            </summary>
+        </member>
+        <member name="T:Dse.Auth.Sspi.PackageSupport">
+            <summary>
+            Queries information about security packages.
+            </summary>
+        </member>
+        <member name="M:Dse.Auth.Sspi.PackageSupport.GetPackageCapabilities(System.String)">
+            <summary>
+            Returns the properties of the named package.
+            </summary>
+            <param name="packageName">The name of the package.</param>
+            <returns></returns>
+        </member>
+        <member name="M:Dse.Auth.Sspi.PackageSupport.EnumeratePackages">
+            <summary>
+            Returns a list of all known security package providers and their properties.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="T:Dse.Auth.Sspi.SecPkgInfo">
+            <summary>
+            Stores information about a particular security package.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.SecPkgInfo.Capabilities">
+            <summary>
+            The packages capabilities and options.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.SecPkgInfo.Version">
+            <summary>
+            The package's version number.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.SecPkgInfo.RpcId">
+            <summary>
+            The package's Id when used in RPC contexts.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.SecPkgInfo.MaxTokenLength">
+            <summary>
+            The maximum size, in bytes, of tokens generated by the package.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.SecPkgInfo.Name">
+            <summary>
+            The human-readable name of the package.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.SecPkgInfo.Comment">
+            <summary>
+            A short description of the package.
+            </summary>
+        </member>
+        <member name="T:Dse.Auth.Sspi.SecPkgCapability">
+            <summary>
+            Describes the capabilities of a security package. 
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.SecPkgCapability.Integrity">
+            <summary>
+            Whether the package supports generating messages with integrity information. Required for MakeSignature and VerifySignature.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.SecPkgCapability.Privacy">
+            <summary>
+            Whether the package supports generating encrypted messages. Required for EncryptMessage and DecryptMessage.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.SecPkgCapability.TokenOnly">
+            <summary>
+            Whether the package uses any other buffer information than token buffers.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.SecPkgCapability.Datagram">
+            <summary>
+            Whether the package supports datagram-style authentication.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.SecPkgCapability.Connection">
+            <summary>
+            Whether the package supports creating contexts with connection semantics
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.SecPkgCapability.MultiLeg">
+            <summary>
+            Multiple legs are neccessary for authentication.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.SecPkgCapability.ClientOnly">
+            <summary>
+            Server authentication is not supported.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.SecPkgCapability.ExtendedError">
+            <summary>
+            Supports extended error handling facilities.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.SecPkgCapability.Impersonation">
+            <summary>
+            Supports client impersonation on the server.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.SecPkgCapability.AcceptWin32Name">
+            <summary>
+            Understands Windows princple and target names.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.SecPkgCapability.Stream">
+            <summary>
+            Supports stream semantics
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.SecPkgCapability.Negotiable">
+            <summary>
+            Package may be used by the Negiotiate meta-package.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.SecPkgCapability.GssCompatible">
+            <summary>
+            Compatible with GSS.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.SecPkgCapability.Logon">
+            <summary>
+            Supports LsaLogonUser
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.SecPkgCapability.AsciiBuffers">
+            <summary>
+            Token buffers are in Ascii format.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.SecPkgCapability.Fragment">
+            <summary>
+            Supports separating large tokens into multiple buffers.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.SecPkgCapability.MutualAuth">
+            <summary>
+            Supports mutual authentication between a client and server.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.SecPkgCapability.Delegation">
+            <summary>
+            Supports credential delegation from the server to a third context.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.SecPkgCapability.ReadOnlyChecksum">
+            <summary>
+            Supports calling EncryptMessage with the read-only-checksum flag, which protects data only 
+            with a checksum and does not encrypt it.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.SecPkgCapability.RestrictedTokens">
+            <summary>
+            Whether the package supports handling restricted tokens, which are tokens derived from existing tokens
+            that have had restrictions placed on them.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.SecPkgCapability.ExtendsNego">
+            <summary>
+            Extends the negotiate package; only one such package may be registered at any time.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.SecPkgCapability.Negotiable2">
+            <summary>
+            This package is negotiated by the package of type ExtendsNego.
+            </summary>
+        </member>
+        <member name="T:Dse.Auth.Sspi.SecurityStatus">
+            <summary>
+            Defines the results of invoking the SSPI api.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.SecurityStatus.OK">
+            <summary>
+            The request completed successfully
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.SecurityStatus.ContinueNeeded">
+            <summary>
+            The token returned by the context needs to be provided to the cooperating party
+            to continue construction of the context.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.SecurityStatus.CompleteNeeded">
+            <summary>
+            Occurs after a client calls InitializeSecurityContext to indicate that the client
+            must call CompleteAuthToken.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.SecurityStatus.CompAndContinue">
+            <summary>
+            Occurs after a client calls InitializeSecurityContext to indicate that the client
+            must call CompleteAuthToken and pass the result to the server.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.SecurityStatus.ContextExpired">
+            <summary>
+            An attempt to use the context was performed after the context's expiration time elapsed.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.SecurityStatus.PackageNotFound">
+            <summary>
+            No security provider package was found with the given name.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.SecurityStatus.InvalidToken">
+            <summary>
+            A token was provided that contained incorrect or corrupted data.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.SecurityStatus.NoImpersonation">
+            <summary>
+            Impersonation is not supported.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.SecurityStatus.IncompleteMessage">
+            <summary>
+            The buffer provided to an SSPI API call contained a message that was not complete.
+            </summary>
+            <remarks>
+            This occurs regularly with SSPI contexts that exchange data using a streaming context,
+            where the data returned from the streaming communications channel, such as a TCP socket,
+            did not contain the complete message. 
+            Similarly, a streaming channel may return too much data, in which case the API function
+            will indicate success, but will save off the extra, unrelated data in a buffer of
+            type 'extra'.
+            </remarks>
+        </member>
+        <member name="T:Dse.Auth.Sspi.SecurityStatusExtensions">
+            <summary>
+            Provides extension methods for the SecurityStatus enumeration.
+            </summary>
+        </member>
+        <member name="M:Dse.Auth.Sspi.SecurityStatusExtensions.IsError(Dse.Auth.Sspi.SecurityStatus)">
+            <summary>
+            Returns whether or not the status represents an error.
+            </summary>
+            <param name="status"></param>
+            <returns>True if the status represents an error condition.</returns>
+        </member>
+        <member name="T:Dse.Auth.SspiClient">
+            <summary>
+            A Windows-only <see cref="T:Dse.Auth.IGssapiClient"/> implementation.
+            </summary>
+        </member>
+        <member name="T:Dse.Auth.Sspi.SspiException">
+            <summary>
+            The exception that is thrown when a problem occurs hwen using the SSPI system.
+            </summary>
+        </member>
+        <member name="M:Dse.Auth.Sspi.SspiException.#ctor(System.String,Dse.Auth.Sspi.SecurityStatus)">
+            <summary>
+            Initializes a new instance of the SSPIException class with the given message and status.
+            </summary>
+            <param name="message">A message explaining what part of the system failed.</param>
+            <param name="errorCode">The error code observed during the failure.</param>
+        </member>
+        <member name="M:Dse.Auth.Sspi.SspiException.#ctor(System.String,System.Int32)">
+            <summary>
+            Creates a new instance of <see cref="T:Dse.Auth.Sspi.SspiException"/>.
+            </summary>
+        </member>
+        <member name="M:Dse.Auth.Sspi.SspiException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <summary>
+            Initializes a new instance of the SSPIException class from serialization data.
+            </summary>
+            <param name="info"></param>
+            <param name="context"></param>
+        </member>
+        <member name="M:Dse.Auth.Sspi.SspiException.GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <summary>
+            Serializes the exception.
+            </summary>
+            <param name="info"></param>
+            <param name="context"></param>
+        </member>
+        <member name="P:Dse.Auth.Sspi.SspiException.ErrorCode">
+            <summary>
+            The error code that was observed during the SSPI call.
+            </summary>
+        </member>
+        <member name="P:Dse.Auth.Sspi.SspiException.Message">
+            <summary>
+            A human-readable message indicating the nature of the exception.
+            </summary>
+        </member>
+        <member name="T:Dse.Auth.Sspi.RawSspiHandle">
+            <summary>
+            Represents the raw structure for any handle created for the SSPI API, for example, credential 
+            handles, context handles, and security package handles. Any SSPI handle is always the size 
+            of two native pointers. 
+            </summary>
+            <remarks>
+            The documentation for SSPI handles can be found here:
+            http://msdn.microsoft.com/en-us/library/windows/desktop/aa380495(v=vs.85).aspx
+            
+            This class is not reference safe - if used directly, or referenced directly, it may be leaked,
+            or subject to finalizer races, or any of the hundred of things SafeHandles were designed to fix.
+            Do not directly use this class - use only though SafeHandle wrapper objects. Any reference needed
+            to this handle for performing work (InitializeSecurityContext, eg) should be performed a CER
+            that employs handle reference counting across the native API invocation.
+            </remarks>
+        </member>
+        <member name="M:Dse.Auth.Sspi.RawSspiHandle.IsZero">
+            <summary>
+            Returns whether or not the handle is set to the default, empty value.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:Dse.Auth.Sspi.RawSspiHandle.SetInvalid">
+            <summary>
+            Sets the handle to an invalid value.
+            </summary>
+            <remarks>
+            This method is executed in a CER during handle release.
+            </remarks>
+        </member>
+        <member name="T:Dse.Auth.Sspi.TimeStamp">
+            <summary>
+            Represents a Windows API Timestamp structure, which stores time in units of 100 nanosecond 
+            ticks, counting from January 1st, year 1601 at 00:00 UTC. Time is stored as a 64-bit value.
+            </summary>
+        </member>
+        <member name="F:Dse.Auth.Sspi.TimeStamp.time">
+            <summary>
+            Stores the time value. Infinite times are often represented as values near, but not exactly
+            at the maximum signed 64-bit 2's complement value.
+            </summary>
+        </member>
+        <member name="M:Dse.Auth.Sspi.TimeStamp.ToDateTime">
+            <summary>
+            Converts the TimeStamp to an equivalant DateTime object. If the TimeStamp represents
+            a value larger than DateTime.MaxValue, then DateTime.MaxValue is returned.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="T:Dse.DseCluster">
+            <summary>
+            Information and known state of a DSE cluster.
+            <para>
+            This is the main entry point of the DSE driver. It extends the CQL driver's ICluster instance with DSE-specific
+            features.
+            </para>
+            </summary>
+            <example>
+            <code>
+            IDseCluster cluster = DseCluster.Builder().AddContactPoint("192.168.0.1").Build();
+            IDseSession session = cluster.Connect("ks1");
+            foreach (Row row in session.Execute(query))
+            {
+                //do something...
+            }
+            </code>
+            </example>
+        </member>
+        <member name="T:Dse.IDseCluster">
+            <summary>
+            Represents a DSE cluster client that contains information and known state of a DSE cluster.
+            </summary>
+        </member>
+        <member name="M:Dse.IDseCluster.Connect">
+            <summary>
+            Creates a new DSE session on this cluster and initializes it.
+            </summary>
+            <returns>A new <see cref="T:Dse.IDseSession"/> instance.</returns>
+        </member>
+        <member name="M:Dse.IDseCluster.Connect(System.String)">
+            <summary>
+            Creates a new DSE session on this cluster, initializes it and sets the keyspace to the provided one.
+            </summary>
+            <param name="keyspace">The keyspace to connect to</param>
+            <returns>A new <see cref="T:Dse.IDseSession"/> instance.</returns>
+        </member>
+        <member name="P:Dse.IDseCluster.Configuration">
+            <summary>
+            Gets the DSE cluster client configuration.
+            </summary>
+        </member>
+        <member name="M:Dse.DseCluster.Builder">
+            <summary>
+            Creates a new <see cref="T:Dse.DseClusterBuilder"/> instance.
+            </summary>
+        </member>
+        <member name="M:Dse.DseCluster.Dispose">
+            <summary>
+            Calls <see cref="M:Dse.DseCluster.Shutdown(System.Int32)"/> with an infinite timeout.
+            </summary>
+        </member>
+        <member name="M:Dse.DseCluster.AllHosts">
+            <summary>
+            Returns all known hosts of this cluster.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:Dse.DseCluster.Connect">
+            <summary>
+            Creates a new <see cref="T:Dse.IDseSession"/> for this cluster.
+            </summary>
+        </member>
+        <member name="M:Dse.DseCluster.Connect(System.String)">
+            <summary>
+            Creates a new <see cref="T:Dse.IDseSession"/> for this cluster to a specific keyspaces.
+            </summary>
+        </member>
+        <member name="M:Dse.DseCluster.GetHost(System.Net.IPEndPoint)">
+            <summary>
+            Get a host instance for a given endpoint.
+            </summary>
+        </member>
+        <member name="M:Dse.DseCluster.GetReplicas(System.String,System.Byte[])">
+            <summary>
+            Gets a collection of replicas for a given partitionKey on a given keyspace.
+            </summary>
+            <param name="keyspace">The keyspace name.</param>
+            <param name="partitionKey">Byte array representing the partition key.</param>
+            <returns></returns>
+        </member>
+        <member name="M:Dse.DseCluster.Shutdown(System.Int32)">
+            <summary>
+            Shutdown this cluster instance. This closes all connections from all the sessions of this instance and
+            reclaim all resources used by it. 
+            <para>This method has no effect if the cluster has already been shutdown.</para>
+            </summary>
+        </member>
+        <member name="E:Dse.DseCluster.HostAdded">
+            <summary>
+            Represents an event that is triggered when a new host is added to the cluster.
+            </summary>
+        </member>
+        <member name="E:Dse.DseCluster.HostRemoved">
+            <summary>
+            Represents an event that is triggered when a new host is decommissioned from the cluster.
+            </summary>
+        </member>
+        <member name="P:Dse.DseCluster.Metadata">
+            <inheritdoc/>
+        </member>
+        <member name="P:Dse.DseCluster.Configuration">
+            <inheritdoc/>
+        </member>
+        <member name="P:Dse.DseCluster.Cassandra#ICluster#Configuration">
+            <inheritdoc/>
+        </member>
+        <member name="T:Dse.DseClusterBuilder">
+            <summary>
+            Helper class to build <see cref="T:Dse.DseCluster"/> instances.
+            </summary>
+        </member>
+        <member name="M:Dse.DseClusterBuilder.WithGraphOptions(Dse.Graph.GraphOptions)">
+            <summary>
+            Sets the DSE Graph options.
+            </summary>
+            <returns>this instance</returns>
+        </member>
+        <member name="M:Dse.DseClusterBuilder.WithPort(System.Int32)">
+            <summary>
+             The port to use to connect to all Cassandra hosts. If not set through this
+             method, the default port (9042) will be used instead.
+            </summary>
+            <param name="port"> the port to set. </param>
+            <returns>this Builder</returns>
+        </member>
+        <member name="M:Dse.DseClusterBuilder.WithQueryOptions(Cassandra.QueryOptions)">
+            <summary>
+            Sets the QueryOptions to use for the newly created Cluster.
+            
+            If no query options are set through this method, default query
+            options will be used.
+            </summary>
+            <param name="options">the QueryOptions to use.</param>
+            <returns>this Builder.</returns>
+        </member>
+        <member name="M:Dse.DseClusterBuilder.WithCompression(Cassandra.CompressionType)">
+            <summary>
+             Sets the compression to use for the transport.
+            </summary>
+            <param name="compression"> the compression to set </param>
+            <returns>this Builder <see>ProtocolOptions.Compression</see></returns>
+        </member>
+        <member name="M:Dse.DseClusterBuilder.WithCustomCompressor(Cassandra.IFrameCompressor)">
+            <summary>
+            Sets a custom compressor to be used for the compression type.
+            If specified, the compression type is mandatory.
+            If not specified the driver default compressor will be use for the compression type.
+            </summary>
+            <param name="compressor">Implementation of IFrameCompressor</param>
+        </member>
+        <member name="M:Dse.DseClusterBuilder.AddContactPoint(System.String)">
+            <summary>
+             Adds a contact point. Contact points are addresses of Cassandra nodes that
+             the driver uses to discover the cluster topology. Only one contact point is
+             required (the driver will retrieve the address of the other nodes
+             automatically), but it is usually a good idea to provide more than one
+             contact point, as if that unique contact point is not available, the driver
+             won't be able to initialize itself correctly.
+            </summary>
+            <remarks>
+             However, this can be useful if the Cassandra nodes are behind a router and 
+             are not accessed directly. Note that if you are in this situation 
+             (Cassandra nodes are behind a router, not directly accessible), you almost 
+             surely want to provide a specific <c>IAddressTranslator</c> 
+             (through <link>Builder.WithAddressTranslater</link>) to translate actual 
+             Cassandra node addresses to the addresses the driver should use, otherwise 
+             the driver will not be able to auto-detect new nodes (and will generally not 
+             function optimally).
+            </remarks>
+            <param name="address">the address of the node to connect to</param> 
+            <returns>this Builder</returns>
+        </member>
+        <member name="M:Dse.DseClusterBuilder.AddContactPoint(System.Net.IPAddress)">
+            <summary>
+             Add contact point. See <see cref="M:Cassandra.Builder.AddContactPoint(System.String)"/> for more details
+             on contact points.
+            </summary>
+            <param name="address"> address of the node to add as contact point</param> 
+            <returns>this Builder</returns>
+        </member>
+        <member name="M:Dse.DseClusterBuilder.AddContactPoint(System.Net.IPEndPoint)">
+            <summary>
+             Add contact point. See <see cref="M:Cassandra.Builder.AddContactPoint(System.String)"/> for more details
+             on contact points.
+            </summary>
+            <param name="address"> address of the node to add as contact point</param> 
+            <returns>this Builder</returns>
+        </member>
+        <member name="M:Dse.DseClusterBuilder.AddContactPoints(System.String[])">
+            <summary>
+             Add contact points. See <see cref="M:Cassandra.Builder.AddContactPoint(System.String)"/> for more details
+             on contact points.
+            </summary>
+            <param name="addresses"> addresses of the nodes to add as contact point</param> 
+            <returns>this Builder </returns>
+        </member>
+        <member name="M:Dse.DseClusterBuilder.AddContactPoints(System.Collections.Generic.IEnumerable{System.String})">
+            <summary>
+             Add contact points. See <link>Builder.AddContactPoint</link> for more details
+             on contact points.
+            </summary>
+            <param name="addresses"> addresses of the nodes to add as contact point</param>
+            <returns>this Builder</returns>
+        </member>
+        <member name="M:Dse.DseClusterBuilder.AddContactPoints(System.Net.IPAddress[])">
+            <summary>
+             Add contact points. See <link>Builder.AddContactPoint</link> for more details
+             on contact points.
+            </summary>
+            <param name="addresses"> addresses of the nodes to add as contact point</param>
+            <returns>this Builder</returns>
+        </member>
+        <member name="M:Dse.DseClusterBuilder.AddContactPoints(System.Collections.Generic.IEnumerable{System.Net.IPAddress})">
+            <summary>
+             Add contact points. See <link>Builder.AddContactPoint</link> for more details
+             on contact points.
+            </summary>
+            <param name="addresses"> addresses of the nodes to add as contact point</param>
+            <returns>this Builder</returns>
+        </member>
+        <member name="M:Dse.DseClusterBuilder.AddContactPoints(System.Net.IPEndPoint[])">
+            <summary>
+             Add contact points. See <link>Builder.AddContactPoint</link> for more details
+             on contact points.
+            </summary>
+            <param name="addresses"> addresses of the nodes to add as contact point</param>
+            <returns>this Builder</returns>
+        </member>
+        <member name="M:Dse.DseClusterBuilder.AddContactPoints(System.Collections.Generic.IEnumerable{System.Net.IPEndPoint})">
+            <summary>
+             Add contact points. See <link>Builder.AddContactPoint</link> for more details
+             on contact points.
+            </summary>
+            <param name="addresses"> addresses of the nodes to add as contact point
+            </param>
+            <returns>this instance</returns>
+        </member>
+        <member name="M:Dse.DseClusterBuilder.WithLoadBalancingPolicy(Cassandra.ILoadBalancingPolicy)">
+            <summary>
+            Configures the load balancing policy to use for the new cluster.
+            <para> 
+            If no load balancing policy is set through this method, <see cref="T:Dse.Policies.DseLoadBalancingPolicy"/>
+            will be used instead.
+            </para>
+            </summary>
+            <param name="policy"> the load balancing policy to use </param>
+            <returns>this instance</returns>
+        </member>
+        <member name="M:Dse.DseClusterBuilder.WithReconnectionPolicy(Cassandra.IReconnectionPolicy)">
+            <summary>
+             Configure the reconnection policy to use for the new cluster. <p> If no
+             reconnection policy is set through this method,
+             <link>Policies.DefaultReconnectionPolicy</link> will be used instead.</p>
+            </summary>
+            <param name="policy"> the reconnection policy to use </param>
+            <returns>this Builder</returns>
+        </member>
+        <member name="M:Dse.DseClusterBuilder.WithRetryPolicy(Cassandra.IRetryPolicy)">
+            <summary>
+             Configure the retry policy to use for the new cluster. <p> If no retry policy
+             is set through this method, <link>Policies.DefaultRetryPolicy</link> will
+             be used instead.</p>
+            </summary>
+            <param name="policy"> the retry policy to use </param>
+            <returns>this Builder</returns>
+        </member>
+        <member name="M:Dse.DseClusterBuilder.WithSpeculativeExecutionPolicy(Cassandra.ISpeculativeExecutionPolicy)">
+            <summary>
+             Configure the speculative execution to use for the new cluster. 
+            <para> 
+            If no speculative execution policy is set through this method, <see cref="P:Cassandra.Policies.DefaultSpeculativeExecutionPolicy"/> will be used instead.
+            </para>
+            </summary>
+            <param name="policy"> the speculative execution policy to use </param>
+            <returns>this Builder</returns>
+        </member>
+        <member name="M:Dse.DseClusterBuilder.WithConnectionString(System.String)">
+            <summary>
+             Configure the cluster by applying settings from ConnectionString. 
+            </summary>
+            <param name="connectionString"> the ConnectionString to use </param>
+            
+            <returns>this Builder</returns>
+        </member>
+        <member name="M:Dse.DseClusterBuilder.WithCredentials(System.String,System.String)">
+            <summary>
+             Uses the provided credentials when connecting to Cassandra hosts. <p> This
+             should be used if the Cassandra cluster has been configured to use the
+             <c>PasswordAuthenticator</c>. If the the default <c>*
+             AllowAllAuthenticator</c> is used instead, using this method has no effect.</p>
+            </summary>
+            <param name="username"> the user name to use to login to Cassandra hosts.</param>
+            <param name="password"> the password corresponding to </param>
+            <returns>this Builder</returns>
+        </member>
+        <member name="M:Dse.DseClusterBuilder.WithAuthProvider(Cassandra.IAuthProvider)">
+            <summary>
+             Use the specified AuthProvider when connecting to Cassandra hosts. <p> Use
+             this method when a custom authentication scheme is in place. You shouldn't
+             call both this method and {@code withCredentials}' on the same
+             <c>Builder</c> instance as one will supersede the other</p>
+            </summary>
+            <param name="authProvider"> the <link>AuthProvider"></link> to use to login to Cassandra hosts.</param>
+            <returns>this Builder</returns>
+        </member>
+        <member name="M:Dse.DseClusterBuilder.WithQueryTimeout(System.Int32)">
+            <summary>
+            Specifies the number of milliseconds that the driver should wait for the response before the query times out in a synchronous operation.
+            <para>
+            This will cause that synchronous operations like <see cref="M:Cassandra.ISession.Execute(System.String)"/> to throw a <see cref="T:System.TimeoutException"/> 
+            after the specified number of milliseconds.
+            </para>
+            Default timeout value is set to <code>20,000</code> (20 seconds).
+            </summary>
+            <remarks>
+            If you want to define a read timeout at a lower level, you can use <see cref="M:Cassandra.SocketOptions.SetReadTimeoutMillis(System.Int32)"/>.
+            </remarks>
+            <param name="queryAbortTimeout">Timeout specified in milliseconds.</param>
+            <returns>this builder</returns>
+        </member>
+        <member name="M:Dse.DseClusterBuilder.WithDefaultKeyspace(System.String)">
+            <summary>
+             Sets default keyspace name for the created cluster.
+            </summary>
+            <param name="defaultKeyspace">Default keyspace name.</param>
+            <returns>this builder</returns>
+        </member>
+        <member name="M:Dse.DseClusterBuilder.WithSocketOptions(Cassandra.SocketOptions)">
+            <summary>
+            Configures the socket options that are going to be used to create the connections to the hosts.
+            </summary>
+        </member>
+        <member name="M:Dse.DseClusterBuilder.WithPoolingOptions(Cassandra.PoolingOptions)">
+            <summary>
+            Sets the pooling options for the cluster.
+            </summary>
+            <returns>this instance</returns>
+        </member>
+        <member name="M:Dse.DseClusterBuilder.WithSSL">
+            <summary>
+             Enables the use of SSL for the created Cluster. Calling this method will use default SSL options. 
+            </summary>
+            <remarks>
+            If SSL is enabled, the driver will not connect to any
+            Cassandra nodes that doesn't have SSL enabled and it is strongly
+            advised to enable SSL on every Cassandra node if you plan on using
+            SSL in the driver. Note that SSL certificate common name(CN) on Cassandra node must match Cassandra node hostname.
+            </remarks>
+            <returns>this builder</returns>
+        </member>
+        <member name="M:Dse.DseClusterBuilder.WithSSL(Cassandra.SSLOptions)">
+            <summary>
+             Enables the use of SSL for the created Cluster using the provided options. 
+            </summary>
+            <remarks>
+            If SSL is enabled, the driver will not connect to any
+            Cassandra nodes that doesn't have SSL enabled and it is strongly
+            advised to enable SSL on every Cassandra node if you plan on using
+            SSL in the driver. Note that SSL certificate common name(CN) on Cassandra node must match Cassandra node hostname.
+            </remarks>
+            <param name="sslOptions">SSL options to use.</param>
+            <returns>this builder</returns>        
+        </member>
+        <member name="M:Dse.DseClusterBuilder.WithAddressTranslator(Cassandra.IAddressTranslator)">
+            <summary>
+             Configures the address translater to use for the new cluster.
+            </summary>
+            <remarks>
+            See <c>IAddressTranslater</c> for more detail on address translation,
+            but the default tanslater, <c>DefaultAddressTranslator</c>, should be
+            correct in most cases. If unsure, stick to the default.
+            </remarks>
+            <param name="addressTranslator">the translater to use.</param>
+            <returns>this Builder</returns>
+        </member>
+        <member name="M:Dse.DseClusterBuilder.WithMaxProtocolVersion(System.Byte)">
+            <summary>
+            <para>Limits the maximum protocol version used to connect to the nodes, when it is not set
+            protocol version used between the driver and the Cassandra cluster is negotiated upon establishing 
+            the first connection.</para>
+            <para>Useful for using the driver against a cluster that contains nodes with different major/minor versions 
+            of Cassandra. For example, preparing for a rolling upgrade of the Cluster.</para>
+            </summary>
+            <param name="version">
+            <para>The native protocol version.</para>
+            <para>Different Cassandra versions support a range of protocol versions, for example: </para>
+            <para>- Cassandra 2.0 (DSE 4.0 – 4.6): Supports protocol versions 1 and 2.</para>
+            <para>- Cassandra 2.1 (DSE 4.7 – 4.8): Supports protocol versions 1, 2 and 3.</para>
+            <para>- Cassandra 2.2: Supports protocol versions 1, 2, 3 and 4.</para>
+            <para>- Cassandra 3.0: Supports protocol versions 3 and 4.</para>
+            </param>
+            <remarks>Some Cassandra features are only available with a specific protocol version.</remarks>
+            <returns>this instance</returns>
+        </member>
+        <member name="M:Dse.DseClusterBuilder.WithTypeSerializers(Cassandra.Serialization.TypeSerializerDefinitions)">
+            <summary>
+            Sets the <see cref="T:Cassandra.Serialization.TypeSerializer`1"/> to be used, replacing the default ones.
+            </summary>
+            <returns>this instance</returns>
+        </member>
+        <member name="M:Dse.DseClusterBuilder.Build">
+            <summary>
+            Build the cluster with the configured set of initial contact points and policies.
+            </summary>
+            <returns>
+            A new <see cref="T:Dse.DseCluster"/> instance.
+            </returns>
+        </member>
+        <member name="P:Dse.DseClusterBuilder.GraphOptions">
+            <summary>
+            Gets the DSE Graph options.
+            </summary>
+        </member>
+        <member name="T:Dse.DseConfiguration">
+            <summary>
+            Represents the configuration of a <see cref="T:Dse.DseCluster"/>.
+            </summary>
+        </member>
+        <member name="M:Dse.DseConfiguration.#ctor(Cassandra.Configuration,Dse.Graph.GraphOptions)">
+            <summary>
+            Creates a new instance of <see cref="T:Dse.DseConfiguration"/>.
+            </summary>
+        </member>
+        <member name="P:Dse.DseConfiguration.AddressTranslator">
+            <summary>
+            To be replaced with CassandraConfiguration.AddressTranslator after CSHARP-444.
+            </summary>
+        </member>
+        <member name="P:Dse.DseConfiguration.CassandraConfiguration">
+            <summary>
+            Gets the configuration related to DSE Cassandra Daemon.
+            </summary>
+        </member>
+        <member name="P:Dse.DseConfiguration.GraphOptions">
+            <summary>
+            Gets the options related to graph instance.
+            </summary>
+        </member>
+        <member name="T:Dse.IDseSession">
+            <summary>
+            Represents an <see cref="T:Cassandra.ISession"/> suitable for querying a DataStax Enterprise (DSE) Cluster.
+            <para>
+            Session instances are designed to be long-lived, thread-safe and usually a single instance is enough per 
+            application.
+            </para>
+            </summary>
+        </member>
+        <member name="M:Dse.IDseSession.ExecuteGraph(Dse.Graph.IGraphStatement)">
+            <summary>
+            Executes a graph statement.
+            </summary>
+            <param name="statement">The graph statement containing the query</param>
+            <example>
+            <code>
+            GraphResultSet rs = session.ExecuteGraph(new SimpleGraphStatement("g.V()"));
+            </code>
+            </example>
+        </member>
+        <member name="M:Dse.IDseSession.ExecuteGraphAsync(Dse.Graph.IGraphStatement)">
+            <summary>
+            Executes a graph statement.
+            </summary>
+            <param name="statement">The graph statement containing the query</param>
+            <example>
+            <code>
+            GraphResultSet rs = await session.ExecuteGraphAsync(new SimpleGraphStatement("g.V()"));
+            </code>
+            </example>
+        </member>
+        <member name="T:Dse.EndianBitConverter">
+            <summary>
+            Equivalent of <see cref="T:System.BitConverter"/> but let's you choose the endianness.
+            </summary>
+        </member>
+        <member name="M:Dse.EndianBitConverter.SetBytes(System.Boolean,System.Byte[],System.Int32,System.Int32)">
+            <summary>
+            Converts an int into an array of bytes and sets to the buffer starting at the specified offset.
+            </summary>
+        </member>
+        <member name="M:Dse.EndianBitConverter.SetBytes(System.Boolean,System.Byte[],System.Int32,System.Double)">
+            <summary>
+            Converts an 64-bit double into an array of bytes and sets to the buffer starting at the specified offset.
+            </summary>
+        </member>
+        <member name="M:Dse.EndianBitConverter.SetBytes(System.Boolean,System.Byte[],System.Int32,System.Int64)">
+            <summary>
+            Converts an int into an array of bytes and sets to the buffer starting at the specified offset.
+            </summary>
+        </member>
+        <member name="M:Dse.EndianBitConverter.ToInt32(System.Boolean,System.Byte[],System.Int32)">
+            <summary>
+            Returns a signed 32-bit integer from four bytes at specified offset from the buffer.
+            </summary>
+        </member>
+        <member name="M:Dse.EndianBitConverter.ToInt64(System.Boolean,System.Byte[],System.Int32)">
+            <summary>
+            Returns a signed 64-bit integer from eight bytes at specified offset from the buffer.
+            </summary>
+        </member>
+        <member name="M:Dse.EndianBitConverter.ToDouble(System.Boolean,System.Byte[],System.Int32)">
+            <summary>
+            Returns a signed 64-bit double from eight bytes at specified offset from the buffer.
+            </summary>
+        </member>
+        <member name="T:Dse.Geometry.GeometryBase">
+            <summary>
+            The driver-side representation for a DSE geospatial type.
+            </summary>
+        </member>
+        <member name="M:Dse.Geometry.GeometryBase.AsReadOnlyCollection``1(System.Collections.Generic.IList{``0},System.Func{``0,``0})">
+            <summary>
+            Checks for null items and returns a read-only collection with an array as underlying list.
+            </summary>
+        </member>
+        <member name="M:Dse.Geometry.GeometryBase.CombineHashCode``1(System.Collections.Generic.IEnumerable{``0})">
+            <summary>
+            Combines the hash code based on the value of items.
+            </summary>
+        </member>
+        <member name="M:Dse.Geometry.GeometryBase.GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <summary>
+            When overridden, sets the serialization info.
+            </summary>
+        </member>
+        <member name="M:Dse.Geometry.GeometrySerializer`1.IsLittleEndian(System.Byte[],System.Int32)">
+            <summary>
+            Returns true if the buffer is little endian according to WKB.
+            </summary>
+        </member>
+        <member name="M:Dse.Geometry.GeometrySerializer`1.IsCpuLittleEndian">
+            <summary>
+            Returns true is the CPU is little-endian.
+            </summary>
+        </member>
+        <member name="T:Dse.Geometry.GeometrySerializer`1.GeometryType">
+            <summary>
+            WKB geometry type codes
+            </summary>
+        </member>
+        <member name="T:Dse.Geometry.LineString">
+            <summary>
+            Represents a one-dimensional object representing a sequence of points and the line segments connecting them.
+            </summary>
+        </member>
+        <member name="M:Dse.Geometry.LineString.#ctor(Dse.Geometry.Point[])">
+            <summary>
+            Creates a new instance of <see cref="T:Dse.Geometry.LineString"/> using a sequence of points.
+            </summary>
+        </member>
+        <member name="M:Dse.Geometry.LineString.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <summary>
+            Creates a new instance of <see cref="T:Dse.Geometry.LineString"/> using a serialization information.
+            </summary>
+        </member>
+        <member name="M:Dse.Geometry.LineString.#ctor(System.Collections.Generic.IList{Dse.Geometry.Point})">
+            <summary>
+            Creates a new instance of <see cref="T:Dse.Geometry.LineString"/> using a list of points.
+            </summary>
+        </member>
+        <member name="M:Dse.Geometry.LineString.Equals(System.Object)">
+            <summary>
+            Returns a value indicating whether this instance and a specified object represent the same value.
+            </summary>
+        </member>
+        <member name="M:Dse.Geometry.LineString.GetHashCode">
+            <summary>
+            Returns the hash code based on the value of this instance.
+            </summary>
+        </member>
+        <member name="M:Dse.Geometry.LineString.GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <inheritdoc />
+        </member>
+        <member name="M:Dse.Geometry.LineString.ToString">
+            <summary>
+            Returns Well-known text (WKT) representation of the geometry object.
+            </summary>
+        </member>
+        <member name="P:Dse.Geometry.LineString.Points">
+            <summary>
+            Gets the read-only list of points describing the LineString.
+            </summary>
+        </member>
+        <member name="T:Dse.Geometry.LineStringSerializer">
+            <summary>
+            A <see cref="T:Dse.Geometry.LineString"/> type serializer.
+            </summary>
+        </member>
+        <member name="T:Dse.Geometry.Point">
+            <summary>
+            Represents a zero-dimensional object that represents a specific (X,Y) location in a two-dimensional XY-Plane.
+            In case of Geographic Coordinate Systems, the X coordinate is the longitude and the Y is the latitude.
+            </summary>
+        </member>
+        <member name="M:Dse.Geometry.Point.#ctor(System.Double,System.Double)">
+            <summary>
+            Creates a new instance of <see cref="T:Dse.Geometry.Point"/>.
+            </summary>
+            <param name="x">The <c>X</c> coordinate.</param>
+            <param name="y">The <c>Y</c> coordinate.</param>
+        </member>
+        <member name="M:Dse.Geometry.Point.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <summary>
+            Creates a new instance of <see cref="T:Dse.Geometry.Point"/>.
+            </summary>
+        </member>
+        <member name="M:Dse.Geometry.Point.Equals(System.Object)">
+            <summary>
+            Returns a value indicating whether this instance and a specified object represent the same value.
+            </summary>
+        </member>
+        <member name="M:Dse.Geometry.Point.GetHashCode">
+            <inheritdoc />
+        </member>
+        <member name="M:Dse.Geometry.Point.GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <inheritdoc />
+        </member>
+        <member name="M:Dse.Geometry.Point.ToString">
+            <summary>
+            Returns Well-known text (WKT) representation of the geometry object.
+            </summary>
+        </member>
+        <member name="P:Dse.Geometry.Point.X">
+            <summary>
+            Returns the X coordinate of this 2D point.
+            </summary>
+        </member>
+        <member name="P:Dse.Geometry.Point.Y">
+            <summary>
+            Returns the Y coordinate of this 2D point.
+            </summary>
+        </member>
+        <member name="T:Dse.Geometry.PointSerializer">
+            <summary>
+            A <see cref="T:Dse.Geometry.Point"/> type serializer.
+            </summary>
+        </member>
+        <member name="T:Dse.Geometry.Polygon">
+            <summary>
+            Represents is a plane geometry figure that is bounded by a finite chain of straight line segments closing in a
+            loop to form a closed chain or circuit.
+            </summary>
+        </member>
+        <member name="M:Dse.Geometry.Polygon.#ctor(Dse.Geometry.Point[])">
+            <summary>
+            Creates a new instance of <see cref="T:Dse.Geometry.Polygon"/> with a single ring.
+            </summary>
+            <param name="points">The points of the single ring</param>
+        </member>
+        <member name="M:Dse.Geometry.Polygon.#ctor(System.Collections.Generic.IList{Dse.Geometry.Point}[])">
+            <summary>
+            Creates a new instance of <see cref="T:Dse.Geometry.Polygon"/> with a sequence of rings.
+            </summary>
+            <param name="points">The points of the single ring</param>
+        </member>
+        <member name="M:Dse.Geometry.Polygon.#ctor">
+            <summary>
+            Creates a new instance of <see cref="T:Dse.Geometry.Polygon"/> with no rings (empty).
+            </summary>
+        </member>
+        <member name="M:Dse.Geometry.Polygon.#ctor(System.Collections.Generic.IList{System.Collections.Generic.IList{Dse.Geometry.Point}})">
+            <summary>
+            Creates a new instance of <see cref="T:Dse.Geometry.Polygon"/> using multiple rings.
+            </summary>
+            <param name="rings">The polygon rings</param>
+        </member>
+        <member name="M:Dse.Geometry.Polygon.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <summary>
+            Creates a new instance of <see cref="T:Dse.Geometry.Polygon"/> using serialization information.
+            </summary>
+        </member>
+        <member name="M:Dse.Geometry.Polygon.Equals(System.Object)">
+            <summary>
+            Returns a value indicating whether this instance and a specified object represent the same value.
+            </summary>
+        </member>
+        <member name="M:Dse.Geometry.Polygon.GetHashCode">
+            <summary>
+            Returns the hash code based on the value of this instance.
+            </summary>
+        </member>
+        <member name="M:Dse.Geometry.Polygon.GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <inheritdoc />
+        </member>
+        <member name="M:Dse.Geometry.Polygon.ToString">
+            <summary>
+            Returns Well-known text (WKT) representation of the geometry object.
+            </summary>
+        </member>
+        <member name="P:Dse.Geometry.Polygon.Rings">
+            <summary>
+            A read-only list describing the rings of the polygon.
+            </summary>
+        </member>
+        <member name="T:Dse.Graph.Edge">
+            <summary>
+            Represents an edge in DSE graph.
+            </summary>
+        </member>
+        <member name="T:Dse.Graph.Element">
+            <summary>
+            Base class for vertices and edges
+            </summary>
+        </member>
+        <member name="M:Dse.Graph.Element.#ctor(Dse.Graph.GraphNode,System.String,System.Collections.Generic.IDictionary{System.String,Dse.Graph.GraphNode})">
+            <summary>
+            Creates a new instance of a Graph <see cref="T:Dse.Graph.Element"/>.
+            </summary>
+        </member>
+        <member name="P:Dse.Graph.Element.Id">
+            <summary>
+            Gets the identifier
+            </summary>
+        </member>
+        <member name="P:Dse.Graph.Element.Label">
+            <summary>
+            Gets the label of the element
+            </summary>
+        </member>
+        <member name="P:Dse.Graph.Element.Properties">
+            <summary>
+            Gets the properties
+            </summary>
+        </member>
+        <member name="M:Dse.Graph.Edge.#ctor(Dse.Graph.GraphNode,System.String,System.Collections.Generic.IDictionary{System.String,Dse.Graph.GraphNode},Dse.Graph.GraphNode,System.String,Dse.Graph.GraphNode,System.String)">
+            <summary>
+            Creates a new instance of <see cref="T:Dse.Graph.Edge"/>.
+            </summary>
+        </member>
+        <member name="P:Dse.Graph.Edge.InV">
+            <summary>
+            Gets the incoming/head vertex.
+            </summary>
+        </member>
+        <member name="P:Dse.Graph.Edge.InVLabel">
+            <summary>
+            Gets the label of the incoming/head vertex.
+            </summary>
+        </member>
+        <member name="P:Dse.Graph.Edge.OutV">
+            <summary>
+            Gets the outgoing/tail vertex.
+            </summary>
+        </member>
+        <member name="P:Dse.Graph.Edge.OutVLabel">
+            <summary>
+            Gets the label of the outgoing/tail vertex.
+            </summary>
+        </member>
+        <member name="T:Dse.Graph.GraphOptions">
+            <summary>
+            The default graph options to use for a DSE cluster.
+            <para>
+            These options will be used for all graph statements sent to the cluster, unless they have been explicitly overridden
+            at the statement level.
+            </para>
+            </summary>
+        </member>
+        <member name="F:Dse.Graph.GraphOptions.DefaultLanguage">
+            <summary>
+            Default value for graph language.
+            </summary>
+        </member>
+        <member name="F:Dse.Graph.GraphOptions.DefaultSource">
+            <summary>
+            Default value for graph source.
+            </summary>
+        </member>
+        <member name="F:Dse.Graph.GraphOptions.DefaultReadTimeout">
+            <summary>
+            Default value for read timeout.
+            </summary>
+        </member>
+        <member name="F:Dse.Graph.GraphOptions.ConsistencyLevelNames">
+            <summary>
+            The consistency levels names that are different from ConsistencyLevel.ToString().ToUpper()
+            </summary>
+        </member>
+        <member name="M:Dse.Graph.GraphOptions.#ctor">
+            <summary>
+            Creates a new instance of <see cref="T:Dse.Graph.GraphOptions"/>.
+            </summary>
+        </member>
+        <member name="M:Dse.Graph.GraphOptions.SetLanguage(System.String)">
+            <summary>
+            Sets the graph language to use in graph queries.
+            If you don't call this method, it defaults to <see cref="F:Dse.Graph.GraphOptions.DefaultLanguage"/>.
+            </summary>
+            <param name="language"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Dse.Graph.GraphOptions.SetName(System.String)">
+            <summary>
+            Sets the graph name to use in graph queries.
+            </summary>
+        </member>
+        <member name="M:Dse.Graph.GraphOptions.SetReadConsistencyLevel(Cassandra.ConsistencyLevel)">
+            <summary>
+            Sets the consistency level for the read graph queries. 
+            </summary>
+            <param name="consistency">The consistency level to use in read graph queries.</param>
+        </member>
+        <member name="M:Dse.Graph.GraphOptions.SetReadTimeoutMillis(System.Int32)">
+            <summary>
+            Overrides the 
+            <see href="http://docs.datastax.com/en/drivers/csharp/3.0/html/P_Cassandra_SocketOptions_ReadTimeoutMillis.htm">
+            default per-host read timeout</see> in milliseconds for all graph queries.
+            </summary>
+            <remarks>
+            When setting a value of zero, it will use the default per-host read timeout defined by the core driver.
+            </remarks>
+        </member>
+        <member name="M:Dse.Graph.GraphOptions.SetSource(System.String)">
+            <summary>
+            Sets the graph traversal source name to use in graph queries.
+            If you don't call this method, it defaults to <see cref="F:Dse.Graph.GraphOptions.DefaultSource"/>.
+            </summary>
+        </member>
+        <member name="M:Dse.Graph.GraphOptions.SetSourceAnalytics">
+            <summary>
+            Sets the graph source to the server-defined analytic traversal source ('a')
+            </summary>
+        </member>
+        <member name="M:Dse.Graph.GraphOptions.SetWriteConsistencyLevel(Cassandra.ConsistencyLevel)">
+            <summary>
+            Sets the consistency level for the write graph queries. 
+            </summary>
+            <param name="consistency">The consistency level to use in write graph queries.</param>
+        </member>
+        <member name="P:Dse.Graph.GraphOptions.Language">
+            <summary>
+            Gets the graph language to use in graph queries.
+            </summary>
+        </member>
+        <member name="P:Dse.Graph.GraphOptions.Name">
+            <summary>
+            Gets the graph name to use in graph queries.
+            </summary>
+        </member>
+        <member name="P:Dse.Graph.GraphOptions.ReadConsistencyLevel">
+            <summary>
+            Gets the consistency level used for read queries
+            </summary>
+        </member>
+        <member name="P:Dse.Graph.GraphOptions.ReadTimeoutMillis">
+            <summary>
+            Gets the value that overrides the 
+            <see href="http://docs.datastax.com/en/drivers/csharp/3.0/html/P_Cassandra_SocketOptions_ReadTimeoutMillis.htm">
+            default per-host read timeout</see> in milliseconds for all graph queries.
+            <para>Default: <c>32000</c>.</para>
+            </summary>
+            <seealso cref="M:Dse.Graph.GraphOptions.SetReadTimeoutMillis(System.Int32)"/>
+        </member>
+        <member name="P:Dse.Graph.GraphOptions.Source">
+            <summary>
+            Gets the graph traversal source name in graph queries.
+            </summary>
+        </member>
+        <member name="P:Dse.Graph.GraphOptions.WriteConsistencyLevel">
+            <summary>
+            Gets the consistency level used for read queries
+            </summary>
+        </member>
+        <member name="T:Dse.Graph.GraphNode">
+            <summary>
+            Represents an item of a graph query result, it can be a vertex, an edge, a path or an scalar value.
+            </summary>
+        </member>
+        <member name="M:Dse.Graph.GraphNode.#ctor(System.String)">
+            <summary>
+            Creates a new instance of <see cref="T:Dse.Graph.GraphNode"/>.
+            </summary>
+            <param name="json">The graph string json with the form: "{\"result\": ...}".</param>
+        </member>
+        <member name="M:Dse.Graph.GraphNode.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <summary>
+            Creates a new instance of <see cref="T:Dse.Graph.GraphNode"/> using a serialization information.
+            </summary>
+        </member>
+        <member name="M:Dse.Graph.GraphNode.Get``1(System.String)">
+            <summary>
+            Gets the typed value of a property of the result.
+            </summary>
+            <typeparam name="T">Type of the property. Use dynamic for object trees.</typeparam>
+            <param name="propertyName">Name of the property.</param>
+        </member>
+        <member name="M:Dse.Graph.GraphNode.GetTokenValue(Newtonsoft.Json.Linq.JToken)">
+            <summary>
+            Returns either an scalar value, a GraphNode or an Array of GraphNodes.
+            </summary>
+        </member>
+        <member name="M:Dse.Graph.GraphNode.HasProperty(System.String)">
+            <summary>
+            Returns true if the property is defined in this instance.
+            </summary>
+            <exception cref="T:System.InvalidOperationException">When the underlying value is not an object tree</exception>
+        </member>
+        <member name="M:Dse.Graph.GraphNode.TryGetMember(System.Dynamic.GetMemberBinder,System.Object@)">
+            <summary>
+            Provides the implementation for operations that get member values.
+            </summary>
+        </member>
+        <member name="M:Dse.Graph.GraphNode.Equals(Dse.Graph.GraphNode)">
+            <summary>
+            Returns true if the value represented by this instance is the same.
+            </summary>
+        </member>
+        <member name="M:Dse.Graph.GraphNode.Equals(System.Object)">
+            <summary>
+            Returns true if the value represented by this instance is the same.
+            </summary>
+        </member>
+        <member name="M:Dse.Graph.GraphNode.GetHashCode">
+            <summary>
+            Gets the hash code for this instance, based on its value.
+            </summary>
+        </member>
+        <member name="M:Dse.Graph.GraphNode.GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <inheritdoc />
+        </member>
+        <member name="M:Dse.Graph.GraphNode.GetProperties">
+            <summary>
+            Gets the a dictionary of properties of this node.
+            </summary>
+        </member>
+        <member name="M:Dse.Graph.GraphNode.ToArray">
+            <summary>
+            Converts the instance into an array when the internal representation is a json array.
+            </summary>
+        </member>
+        <member name="M:Dse.Graph.GraphNode.ToBoolean">
+            <summary>
+            Returns the representation of the result as a boolean.
+            </summary>
+            <exception cref="T:System.InvalidOperationException">
+            It throws an InvalidOperationException when the internal value is not an scalar.
+            </exception>
+            <exception cref="T:System.InvalidCastException">When the scalar value is not convertible to target type.</exception>
+        </member>
+        <member name="M:Dse.Graph.GraphNode.ToDouble">
+            <summary>
+            Returns the representation of the result as a double.
+            </summary>
+            <exception cref="T:System.InvalidOperationException">
+            It throws an InvalidOperationException when the internal value is not an scalar.
+            </exception>
+            <exception cref="T:System.InvalidCastException">When the scalar value is not convertible to target type.</exception>
+        </member>
+        <member name="M:Dse.Graph.GraphNode.ToEdge">
+            <summary>
+            Returns an edge representation of the current instance.
+            </summary>
+        </member>
+        <member name="M:Dse.Graph.GraphNode.ToInt32">
+            <summary>
+            Returns the representation of the result as an int.
+            </summary>
+            <exception cref="T:System.InvalidOperationException">
+            It throws an InvalidOperationException when the internal value is not an scalar.
+            </exception>
+            <exception cref="T:System.InvalidCastException">When the scalar value is not convertible to target type.</exception>
+        </member>
+        <member name="M:Dse.Graph.GraphNode.ToPath">
+            <summary>
+            Returns a <see cref="T:Dse.Graph.Path"/> representation of the current instance.
+            </summary>
+        </member>
+        <member name="M:Dse.Graph.GraphNode.ToString">
+            <summary>
+            Returns the json representation of the result.
+            </summary>
+        </member>
+        <member name="M:Dse.Graph.GraphNode.ToVertex">
+            <summary>
+            Returns a vertex representation of the current instance.
+            </summary>
+        </member>
+        <member name="M:Dse.Graph.GraphNode.op_Equality(Dse.Graph.GraphNode,Dse.Graph.GraphNode)">
+            <summary>
+            Returns true if the value represented by the instances are the same.
+            </summary>
+        </member>
+        <member name="M:Dse.Graph.GraphNode.op_Inequality(Dse.Graph.GraphNode,Dse.Graph.GraphNode)">
+            <summary>
+            Compares the values for inequality.
+            </summary>
+        </member>
+        <member name="M:Dse.Graph.GraphNode.op_Implicit(Dse.Graph.GraphNode)~Dse.Graph.Vertex">
+            <summary>
+            Converts this instance to a <see cref="T:Dse.Graph.Vertex"/> instance.
+            </summary>
+        </member>
+        <member name="M:Dse.Graph.GraphNode.op_Implicit(Dse.Graph.GraphNode)~Dse.Graph.Edge">
+            <summary>
+            Converts this instance to an <see cref="T:Dse.Graph.Edge"/> instance.
+            </summary>
+        </member>
+        <member name="M:Dse.Graph.GraphNode.op_Implicit(Dse.Graph.GraphNode)~Dse.Graph.Path">
+            <summary>
+            Converts this instance to a <see cref="T:Dse.Graph.Path"/> instance.
+            </summary>
+        </member>
+        <member name="P:Dse.Graph.GraphNode.IsArray">
+            <summary>
+            Returns true if the underlying value is an array.
+            </summary>
+        </member>
+        <member name="P:Dse.Graph.GraphNode.IsObjectTree">
+            <summary>
+            Returns true if the underlying value is an object tree.
+            </summary>
+        </member>
+        <member name="P:Dse.Graph.GraphNode.IsScalar">
+            <summary>
+            Returns true if the underlying value is a scalar value (string, double, boolean, ...).
+            </summary>
+        </member>
+        <member name="T:Dse.Graph.GraphResultSet">
+            <summary>
+            Represents the result set containing the Graph results returned from a query.
+            </summary>
+        </member>
+        <member name="M:Dse.Graph.GraphResultSet.#ctor(Cassandra.RowSet)">
+            <summary>
+            Creates a new instance of <see cref="T:Dse.Graph.GraphResultSet"/>.
+            </summary>
+        </member>
+        <member name="M:Dse.Graph.GraphResultSet.GetEnumerator">
+            <summary>
+            Returns an enumerator that iterates through the collection.
+            </summary>
+        </member>
+        <member name="P:Dse.Graph.GraphResultSet.Info">
+            <summary>
+            Gets the execution information for the query execution.
+            </summary>
+        </member>
+        <member name="T:Dse.Graph.GraphStatement">
+            <summary>
+            Base class for graph statements.
+            </summary>
+        </member>
+        <member name="T:Dse.Graph.IGraphStatement">
+            <summary>
+            Represents a graph statement.
+            </summary>
+        </member>
+        <member name="M:Dse.Graph.IGraphStatement.ToIStatement(Dse.Graph.GraphOptions)">
+            <summary>
+            Returns the <see cref="T:Cassandra.IStatement"/> representation of the Graph statement.
+            </summary>
+            <remarks>Used by the DSE driver to translate between this statement and Core driver statement instances</remarks>
+        </member>
+        <member name="P:Dse.Graph.IGraphStatement.ConsistencyLevel">
+            <summary>
+            Returns the consistency level to use for this statement.
+            </summary>
+        </member>
+        <member name="P:Dse.Graph.IGraphStatement.GraphLanguage">
+            <summary>
+            Gets the graph language to use with this statement.
+            </summary>
+        </member>
+        <member name="P:Dse.Graph.IGraphStatement.GraphName">
+            <summary>
+            Gets the graph name to use with this statement.
+            </summary>
+        </member>
+        <member name="P:Dse.Graph.IGraphStatement.GraphReadConsistencyLevel">
+            <summary>
+            Gets the consistency level used for read graph queries.
+            </summary>
+        </member>
+        <member name="P:Dse.Graph.IGraphStatement.ReadTimeoutMillis">
+            <summary>
+            Gets the ReadTimeout for the statement that, when is greater than 0, overrides
+            <see cref="P:Dse.Graph.GraphOptions.ReadTimeoutMillis"/>.
+            </summary>
+        </member>
+        <member name="P:Dse.Graph.IGraphStatement.GraphSource">
+            <summary>
+            Gets the graph traversal source name to use with this statement.
+            </summary>
+        </member>
+        <member name="P:Dse.Graph.IGraphStatement.GraphWriteConsistencyLevel">
+            <summary>
+            Gets the consistency level used for write graph queries.
+            </summary>
+        </member>
+        <member name="P:Dse.Graph.IGraphStatement.IsSystemQuery">
+            <summary>
+            Determines whether this statement is marked as a system query.
+            </summary>
+        </member>
+        <member name="P:Dse.Graph.IGraphStatement.Timestamp">
+            <summary>
+            Gets the default timestamp for this query.
+            </summary>
+        </member>
+        <member name="M:Dse.Graph.GraphStatement.GetIStatement(Dse.Graph.GraphOptions)">
+            <summary>
+            Gets the IStatement for this GraphStatement instance.
+            </summary>
+        </member>
+        <member name="M:Dse.Graph.GraphStatement.IsAnonymous(System.Object)">
+            <summary>
+            Determines whether the object is anonymous.
+            </summary>
+            <exception cref="T:System.ArgumentNullException"/>
+        </member>
+        <member name="M:Dse.Graph.GraphStatement.SetConsistencyLevel(Cassandra.ConsistencyLevel)">
+            <summary>
+            Sets the consistency level to use for this statement.
+            <para>
+            This setting will affect the general consistency when executing the gremlin query. However
+            executing a gremlin query on the server side is going to involve the execution of CQL queries to the 
+            persistence engine that is Cassandra. Those queries can be both reads and writes and both will have a
+            settable consistency level. Setting only this property will indicate to the server to use this consistency
+            level for both reads and writes in Cassandra. Read or write consistency level can be set separately with
+            respectively
+            <see cref="M:Dse.Graph.GraphStatement.SetGraphReadConsistencyLevel(Cassandra.ConsistencyLevel)"/> and
+            <see cref="M:Dse.Graph.GraphStatement.SetGraphWriteConsistencyLevel(Cassandra.ConsistencyLevel)"/> will override the consistency set
+            here.
+            </para>
+            </summary>
+        </member>
+        <member name="M:Dse.Graph.GraphStatement.SetGraphLanguage(System.String)">
+            <summary>
+            Sets the graph language to use with this statement.
+            <para>
+            This property is not required; if it is not set, the default <see cref="P:Dse.Graph.GraphOptions.Language"/> will be
+            used when executing the statement.
+            </para>
+            </summary>
+        </member>
+        <member name="M:Dse.Graph.GraphStatement.SetGraphName(System.String)">
+            <summary>
+            Sets the graph name to use in graph queries.
+            If you don't call this method, it is left unset.
+            </summary>
+        </member>
+        <member name="M:Dse.Graph.GraphStatement.SetGraphReadConsistencyLevel(Cassandra.ConsistencyLevel)">
+            <summary>
+            Sets the consistency level used for the graph read query.
+            <para>
+            This setting will override the consistency level set with 
+            <see cref="M:Dse.Graph.GraphStatement.SetConsistencyLevel(Cassandra.ConsistencyLevel)"/> only for the READ part of the graph query.
+            </para>
+            </summary>
+        </member>
+        <member name="M:Dse.Graph.GraphStatement.SetGraphSource(System.String)">
+            <summary>
+            Sets the graph traversal source name to use in graph queries.
+            If you don't call this method, it defaults to <see cref="P:Dse.Graph.GraphOptions.Source"/>.
+            </summary>
+        </member>
+        <member name="M:Dse.Graph.GraphStatement.SetGraphSourceAnalytics">
+            <summary>
+            Sets the graph source to the server-defined analytic traversal source ("a") for this statement.
+            </summary>
+        </member>
+        <member name="M:Dse.Graph.GraphStatement.SetGraphWriteConsistencyLevel(Cassandra.ConsistencyLevel)">
+            <summary>
+            Sets the consistency level used for the graph write query.
+            <para>
+            This setting will override the consistency level set with 
+            <see cref="M:Dse.Graph.GraphStatement.SetConsistencyLevel(Cassandra.ConsistencyLevel)"/> only for the WRITE part of the graph query.
+            </para>
+            </summary>
+        </member>
+        <member name="M:Dse.Graph.GraphStatement.SetReadTimeoutMillis(System.Int32)">
+            <summary>
+            Sets the per-host read timeout in milliseconds for this statement.
+            </summary>
+            <param name="timeout">Timeout in milliseconds.</param>
+            <returns>This instance</returns>
+        </member>
+        <member name="M:Dse.Graph.GraphStatement.SetSystemQuery">
+            <summary>
+            Forces this statement to use no graph name, even if a default graph name was defined 
+            with <see cref="M:Dse.Graph.GraphOptions.SetName(System.String)"/>.
+            <para>
+            If a graph name was previously defined on this statement, it will be reset.
+            </para>
+            </summary>
+        </member>
+        <member name="M:Dse.Graph.GraphStatement.SetTimestamp(System.DateTimeOffset)">
+            <summary>
+            Sets the timestamp associated with this query.
+            </summary>
+        </member>
+        <member name="P:Dse.Graph.GraphStatement.ConsistencyLevel">
+            <inheritdoc/>
+        </member>
+        <member name="P:Dse.Graph.GraphStatement.GraphAlias">
+            <inheritdoc/>
+        </member>
+        <member name="P:Dse.Graph.GraphStatement.GraphLanguage">
+            <inheritdoc/>
+        </member>
+        <member name="P:Dse.Graph.GraphStatement.GraphName">
+            <inheritdoc/>
+        </member>
+        <member name="P:Dse.Graph.GraphStatement.GraphReadConsistencyLevel">
+            <inheritdoc/>
+        </member>
+        <member name="P:Dse.Graph.GraphStatement.GraphSource">
+            <inheritdoc/>
+        </member>
+        <member name="P:Dse.Graph.GraphStatement.GraphWriteConsistencyLevel">
+            <inheritdoc/>
+        </member>
+        <member name="P:Dse.Graph.GraphStatement.IsSystemQuery">
+            <inheritdoc/>
+        </member>
+        <member name="P:Dse.Graph.GraphStatement.ReadTimeoutMillis">
+            <inheritdoc />
+        </member>
+        <member name="P:Dse.Graph.GraphStatement.Timestamp">
+            <summary>
+            Gets the default timestamp associated with this query.
+            </summary>
+        </member>
+        <member name="T:Dse.Graph.Path">
+            <summary>
+            Represents a walk through a graph as defined by a traversal.
+            </summary>
+        </member>
+        <member name="M:Dse.Graph.Path.#ctor(System.Collections.Generic.ICollection{System.Collections.Generic.ICollection{System.String}},System.Collections.Generic.ICollection{Dse.Graph.GraphNode})">
+            <summary>
+            Creates a new instance of <see cref="T:Dse.Graph.Path"/>.
+            </summary>
+            <param name="labels">The sets of labels of the steps traversed by this path.</param>
+            <param name="objects">The objects traversed by this path</param>
+        </member>
+        <member name="P:Dse.Graph.Path.Labels">
+            <summary>
+            Returns the sets of labels of the steps traversed by this path, or an empty list, if this path is empty.
+            </summary>
+        </member>
+        <member name="P:Dse.Graph.Path.Objects">
+            <summary>
+            Returns the objects traversed by this path, or an empty list, if this path is empty.
+            </summary>
+        </member>
+        <member name="T:Dse.Graph.SimpleGraphStatement">
+            <summary>
+            Represents a graph query.
+            </summary>
+        </member>
+        <member name="M:Dse.Graph.SimpleGraphStatement.#ctor(System.String)">
+            <summary>
+            Creates a new instance of <see cref="T:Dse.Graph.SimpleGraphStatement"/> using a query with no parameters.
+            </summary>
+            <param name="query">The graph query string.</param>
+        </member>
+        <member name="M:Dse.Graph.SimpleGraphStatement.#ctor(System.String,System.Object)">
+            <summary>
+            Creates a new instance of <see cref="T:Dse.Graph.SimpleGraphStatement"/> using a query with named parameters.
+            </summary>
+            <param name="query">The graph query string.</param>
+            <param name="values">An anonymous object containing the parameters as properties.</param>
+            <example>
+            <code>new SimpleGraphStatement("g.V().has('name', myName)", new { myName = "mark"})</code>
+            </example>
+        </member>
+        <member name="M:Dse.Graph.SimpleGraphStatement.#ctor(System.Collections.Generic.IDictionary{System.String,System.Object},System.String)">
+            <summary>
+            Creates a new instance of <see cref="T:Dse.Graph.SimpleGraphStatement"/> using a query with named parameters.
+            </summary>
+            <param name="values">An Dictionary object containing the parameters name and values as key and values.</param>
+            <param name="query">The graph query string.</param>
+            <example>
+            <code>
+            new SimpleGraphStatement(
+                new Dictionary&lt;string, object&gt;{ { "myName", "mark" } }, 
+                "g.V().has('name', myName)")
+            </code>
+            </example>
+        </member>
+        <member name="T:Dse.Graph.Vertex">
+            <summary>
+            Represents a vertex in DSE graph.
+            </summary>
+        </member>
+        <member name="M:Dse.Graph.Vertex.#ctor(Dse.Graph.GraphNode,System.String,System.Collections.Generic.IDictionary{System.String,Dse.Graph.GraphNode})">
+            <summary>
+            Creates a new <see cref="T:Dse.Graph.Vertex"/> instance.
+            </summary>
+        </member>
+        <member name="T:Dse.Policies.DseLoadBalancingPolicy">
+            <summary>
+            A load balancing policy designed to run against DSE cluster.
+            <para>
+             For most executions, the query plan will be determined by the child load balancing policy.
+             Except for some cases, like graph analytics queries, for which it uses the preferred analytics graph server
+             previously obtained by driver as first host in the query plan.
+            </para>
+            </summary>
+        </member>
+        <member name="M:Dse.Policies.DseLoadBalancingPolicy.#ctor(Cassandra.ILoadBalancingPolicy)">
+            <summary>
+            Creates a new instance of <see cref="T:Dse.Policies.DseLoadBalancingPolicy"/>.
+            </summary>
+        </member>
+        <member name="M:Dse.Policies.DseLoadBalancingPolicy.CreateDefault">
+            <summary>
+            Creates the default load balancing policy, using 
+            <see cref="P:Cassandra.Policies.DefaultLoadBalancingPolicy"/> as child policy.
+            </summary>
+        </member>
+        <member name="M:Dse.Policies.DseLoadBalancingPolicy.Distance(Cassandra.Host)">
+            <summary>
+            Returns the distance as determined by the child policy.
+            </summary>
+        </member>
+        <member name="M:Dse.Policies.DseLoadBalancingPolicy.Initialize(Cassandra.ICluster)">
+            <summary>
+            Initializes the policy.
+            </summary>
+        </member>
+        <member name="M:Dse.Policies.DseLoadBalancingPolicy.NewQueryPlan(System.String,Cassandra.IStatement)">
+            <summary>
+            Returns the hosts to used for a query.
+            </summary>
+        </member>
+        <member name="P:Dse.TargettedSimpleStatement.PreferredHost">
+            <summary>
+            The preferred host to be used by the load balancing policy.
+            </summary>
+        </member>
+        <member name="M:Dse.Tasks.TaskHelper.ContinueSync``2(System.Threading.Tasks.Task{``0},System.Func{``0,``1})">
+            <summary>
+            Smart ContinueWith that executes the sync delegate once the initial task is completed and returns 
+            a Task of the result of sync delegate while propagating exceptions
+            </summary>
+        </member>
+        <member name="M:Dse.Tasks.TaskHelper.DoNextAndHandle``2(System.Threading.Tasks.TaskCompletionSource{``1},System.Threading.Tasks.Task{``0},System.Func{``0,``1})">
+            <summary>
+            Invokes the next function immediately and assigns the result to a Task, propagating exceptions to the new Task
+            </summary>
+        </member>
+        <member name="M:Dse.Tasks.TaskHelper.FromException``1(System.Exception)">
+            <summary>
+            Returns a faulted task with the provided exception
+            </summary>
+        </member>
+        <member name="M:Dse.Tasks.TaskHelper.PreserveStackTrace(System.Exception)">
+            <summary>
+            Required when re-throwing exceptions to maintain the stack trace of the original exception
+            </summary>
+        </member>
+        <member name="M:Dse.Tasks.TaskHelper.Then``2(System.Threading.Tasks.Task{``0},System.Func{``0,System.Threading.Tasks.Task{``1}})">
+            <summary>
+            Once Task is completed with another Task, returning the second task, propagating exceptions to the second Task.
+            </summary>
+        </member>
+        <member name="M:Dse.Tasks.TaskHelper.ToTask``1(``0)">
+            <summary>
+            Returns a completed task with the result.
+            </summary>
+        </member>
+        <member name="M:Dse.Tasks.TaskHelper.WaitToComplete``1(System.Threading.Tasks.Task{``0},System.Int32)">
+            <summary>
+            Waits the task to transition to RanToComplete and returns the Task.Result.
+            It throws the inner exception of the AggregateException in case there is a single exception.
+            It throws the Aggregate exception when there is more than 1 inner exception.
+            It throws a TimeoutException when the task didn't complete in the expected time.
+            </summary>
+            <param name="task">the task to wait upon</param>
+            <param name="timeout">timeout in milliseconds</param>
+            <exception cref="T:System.TimeoutException"/>
+            <exception cref="T:System.AggregateException"/>
+        </member>
+        <member name="M:Dse.Tasks.TaskHelper.WaitToComplete(System.Threading.Tasks.Task,System.Int32)">
+            <summary>
+            Waits the task to transition to RanToComplete.
+            It throws the inner exception of the AggregateException in case there is a single exception.
+            It throws the Aggregate exception when there is more than 1 inner exception.
+            It throws a TimeoutException when the task didn't complete in the expected time.
+            </summary>
+            <param name="task">the task to wait upon</param>
+            <param name="timeout">timeout in milliseconds</param>
+            <exception cref="T:System.TimeoutException"/>
+            <exception cref="T:System.AggregateException"/>
+        </member>
+    </members>
+</doc>

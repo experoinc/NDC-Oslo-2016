@@ -1,0 +1,25 @@
+﻿syntax = "proto3";
+package expero;
+//Y:\Documents\experoinc\github\NDC-Oslo-2016\NDC.Oslo\packages\Grpc.Tools.0.13.1\tools\windows_x86\protoc.exe Y:\Documents\experoinc\github\NDC-Oslo-2016\NDC.Oslo\Models\protos\TruckingService.proto --csharp_out=Y:\Documents\experoinc\github\NDC-Oslo-2016\NDC.Oslo\Models\. -I Y:\Documents\experoinc\github\NDC-Oslo-2016\NDC.Oslo\Models\protos\ --plugin=protoc-gen-grpc=Y:\Documents\experoinc\github\NDC-Oslo-2016\NDC.Oslo\packages\Grpc.Tools.0.13.1\tools\windows_x64\grpc_csharp_plugin.exe --grpc_out=Y:\Documents\experoinc\github\NDC-Oslo-2016\NDC.Oslo\Models
+
+service Trucking
+{
+	rpc RecordLocation(stream Point) returns (stream Response);
+	rpc Hello(Msg) returns (Msg);
+}
+
+message Point {
+  string truck_name=1;
+  string truck_manufacturer=2;
+  string trip_id=3;
+  float latitude = 4;
+  float longitude = 5;
+}
+
+message Response {
+  int32 status = 1;
+}
+
+message Msg {
+	string hello_world =1;
+}

@@ -1,0 +1,1 @@
+\\Mac\Home\Documents\experoinc\github\NDC-Oslo-2016\NDC.Oslo\TestHost\bin\Debug\TestHost.exe.config
