@@ -11,6 +11,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client", "Client\Client.csp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TruckingServer", "TruckingServer\TruckingServer.csproj", "{525B749A-EA19-4362-8224-69CB389F0FDD}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{F3C78FDD-CE3E-48F0-A058-DD8B0EFBD444}"
+	ProjectSection(SolutionItems) = preProject
+		Create Keyspace and Table.cql = Create Keyspace and Table.cql
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

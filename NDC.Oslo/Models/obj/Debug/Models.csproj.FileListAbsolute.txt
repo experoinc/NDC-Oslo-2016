@@ -31,4 +31,3 @@ V:\Documents\experoinc\github\NDC-Oslo-2016\NDC.Oslo\Models\bin\Debug\Grpc.Core.
 V:\Documents\experoinc\github\NDC-Oslo-2016\NDC.Oslo\Models\bin\Debug\System.Interactive.Async.xml
 V:\Documents\experoinc\github\NDC-Oslo-2016\NDC.Oslo\Models\obj\Debug\Models.dll
 V:\Documents\experoinc\github\NDC-Oslo-2016\NDC.Oslo\Models\obj\Debug\Models.pdb
-V:\Documents\experoinc\github\NDC-Oslo-2016\NDC.Oslo\Models\obj\Debug\Models.csprojResolveAssemblyReference.cache

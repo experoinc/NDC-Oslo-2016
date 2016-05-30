@@ -14,7 +14,6 @@ namespace Expero {
 
     static readonly Marshaller<global::Expero.Point> __Marshaller_Point = Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Expero.Point.Parser.ParseFrom);
     static readonly Marshaller<global::Expero.Response> __Marshaller_Response = Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Expero.Response.Parser.ParseFrom);
-    static readonly Marshaller<global::Expero.Msg> __Marshaller_Msg = Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Expero.Msg.Parser.ParseFrom);
 
     static readonly Method<global::Expero.Point, global::Expero.Response> __Method_RecordLocation = new Method<global::Expero.Point, global::Expero.Response>(
         MethodType.DuplexStreaming,
@@ -22,13 +21,6 @@ namespace Expero {
         "RecordLocation",
         __Marshaller_Point,
         __Marshaller_Response);
-
-    static readonly Method<global::Expero.Msg, global::Expero.Msg> __Method_Hello = new Method<global::Expero.Msg, global::Expero.Msg>(
-        MethodType.Unary,
-        __ServiceName,
-        "Hello",
-        __Marshaller_Msg,
-        __Marshaller_Msg);
 
     // service descriptor
     public static global::Google.Protobuf.Reflection.ServiceDescriptor Descriptor
@@ -41,17 +33,12 @@ namespace Expero {
     {
       AsyncDuplexStreamingCall<global::Expero.Point, global::Expero.Response> RecordLocation(Metadata headers = null, DateTime? deadline = null, CancellationToken cancellationToken = default(CancellationToken));
       AsyncDuplexStreamingCall<global::Expero.Point, global::Expero.Response> RecordLocation(CallOptions options);
-      global::Expero.Msg Hello(global::Expero.Msg request, Metadata headers = null, DateTime? deadline = null, CancellationToken cancellationToken = default(CancellationToken));
-      global::Expero.Msg Hello(global::Expero.Msg request, CallOptions options);
-      AsyncUnaryCall<global::Expero.Msg> HelloAsync(global::Expero.Msg request, Metadata headers = null, DateTime? deadline = null, CancellationToken cancellationToken = default(CancellationToken));
-      AsyncUnaryCall<global::Expero.Msg> HelloAsync(global::Expero.Msg request, CallOptions options);
     }
 
     // server-side interface
     public interface ITrucking
     {
       Task RecordLocation(IAsyncStreamReader<global::Expero.Point> requestStream, IServerStreamWriter<global::Expero.Response> responseStream, ServerCallContext context);
-      Task<global::Expero.Msg> Hello(global::Expero.Msg request, ServerCallContext context);
     }
 
     // client stub
@@ -70,34 +57,13 @@ namespace Expero {
         var call = CreateCall(__Method_RecordLocation, options);
         return Calls.AsyncDuplexStreamingCall(call);
       }
-      public global::Expero.Msg Hello(global::Expero.Msg request, Metadata headers = null, DateTime? deadline = null, CancellationToken cancellationToken = default(CancellationToken))
-      {
-        var call = CreateCall(__Method_Hello, new CallOptions(headers, deadline, cancellationToken));
-        return Calls.BlockingUnaryCall(call, request);
-      }
-      public global::Expero.Msg Hello(global::Expero.Msg request, CallOptions options)
-      {
-        var call = CreateCall(__Method_Hello, options);
-        return Calls.BlockingUnaryCall(call, request);
-      }
-      public AsyncUnaryCall<global::Expero.Msg> HelloAsync(global::Expero.Msg request, Metadata headers = null, DateTime? deadline = null, CancellationToken cancellationToken = default(CancellationToken))
-      {
-        var call = CreateCall(__Method_Hello, new CallOptions(headers, deadline, cancellationToken));
-        return Calls.AsyncUnaryCall(call, request);
-      }
-      public AsyncUnaryCall<global::Expero.Msg> HelloAsync(global::Expero.Msg request, CallOptions options)
-      {
-        var call = CreateCall(__Method_Hello, options);
-        return Calls.AsyncUnaryCall(call, request);
-      }
     }
 
     // creates service definition that can be registered with a server
     public static ServerServiceDefinition BindService(ITrucking serviceImpl)
     {
       return ServerServiceDefinition.CreateBuilder(__ServiceName)
-          .AddMethod(__Method_RecordLocation, serviceImpl.RecordLocation)
-          .AddMethod(__Method_Hello, serviceImpl.Hello).Build();
+          .AddMethod(__Method_RecordLocation, serviceImpl.RecordLocation).Build();
     }
 
     // creates a new client

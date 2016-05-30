@@ -8,16 +8,11 @@ using Grpc.Core;
 
 namespace TruckingServer
 {
-    public class TruckingServerImpl : Expero.Trucking.ITrucking
+    public class TruckingServerImpl : Trucking.ITrucking
     {
-        public async Task<Msg> Hello(Msg request, ServerCallContext context)
-        {
-            return new Msg { HelloWorld = request.HelloWorld + " World" };
-        }
-
         public async Task RecordLocation(IAsyncStreamReader<Point> requestStream, IServerStreamWriter<Response> responseStream, ServerCallContext context)
         {
-            var cluster = Cluster.Builder().AddContactPoint("dse5.palladiumconsulting.com").Build();
+            var cluster = Cluster.Builder().AddContactPoint("xxx.xxxx.com").Build();
             var session = cluster.Connect("ndc_oslo");
 
             var stopwatch = new Stopwatch();
@@ -32,7 +27,7 @@ namespace TruckingServer
 
                 await responseStream.WriteAsync(new Response
                 {
-                    Status = (int)stopwatch.ElapsedMilliseconds
+                    ResponseTime = (int)stopwatch.ElapsedMilliseconds
                 });
             }
         }
@@ -54,7 +49,7 @@ namespace TruckingServer
 
         protected static long CurrentUnixTimestamp()
         {
-            return Convert.ToInt64((DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalMilliseconds;
+            return Convert.ToInt64((DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalMilliseconds);
         }
     }
 }

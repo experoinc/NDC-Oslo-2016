@@ -5,7 +5,6 @@ package expero;
 service Trucking
 {
 	rpc RecordLocation(stream Point) returns (stream Response);
-	rpc Hello(Msg) returns (Msg);
 }
 
 message Point {
@@ -17,9 +16,5 @@ message Point {
 }
 
 message Response {
-  int32 status = 1;
-}
-
-message Msg {
-	string hello_world =1;
+  int32 response_time = 1;
 }

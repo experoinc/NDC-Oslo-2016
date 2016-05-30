@@ -26,16 +26,14 @@ namespace Expero {
             "ChVUcnVja2luZ1NlcnZpY2UucHJvdG8SBmV4cGVybyJtCgVQb2ludBISCgp0",
             "cnVja19uYW1lGAEgASgJEhoKEnRydWNrX21hbnVmYWN0dXJlchgCIAEoCRIP",
             "Cgd0cmlwX2lkGAMgASgJEhAKCGxhdGl0dWRlGAQgASgCEhEKCWxvbmdpdHVk",
-            "ZRgFIAEoAiIaCghSZXNwb25zZRIOCgZzdGF0dXMYASABKAUiGgoDTXNnEhMK",
-            "C2hlbGxvX3dvcmxkGAEgASgJMmQKCFRydWNraW5nEjUKDlJlY29yZExvY2F0",
-            "aW9uEg0uZXhwZXJvLlBvaW50GhAuZXhwZXJvLlJlc3BvbnNlKAEwARIhCgVI",
-            "ZWxsbxILLmV4cGVyby5Nc2caCy5leHBlcm8uTXNnYgZwcm90bzM="));
+            "ZRgFIAEoAiIhCghSZXNwb25zZRIVCg1yZXNwb25zZV90aW1lGAEgASgFMkEK",
+            "CFRydWNraW5nEjUKDlJlY29yZExvY2F0aW9uEg0uZXhwZXJvLlBvaW50GhAu",
+            "ZXhwZXJvLlJlc3BvbnNlKAEwAWIGcHJvdG8z"));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { },
           new pbr::GeneratedCodeInfo(null, new pbr::GeneratedCodeInfo[] {
             new pbr::GeneratedCodeInfo(typeof(global::Expero.Point), global::Expero.Point.Parser, new[]{ "TruckName", "TruckManufacturer", "TripId", "Latitude", "Longitude" }, null, null, null),
-            new pbr::GeneratedCodeInfo(typeof(global::Expero.Response), global::Expero.Response.Parser, new[]{ "Status" }, null, null, null),
-            new pbr::GeneratedCodeInfo(typeof(global::Expero.Msg), global::Expero.Msg.Parser, new[]{ "HelloWorld" }, null, null, null)
+            new pbr::GeneratedCodeInfo(typeof(global::Expero.Response), global::Expero.Response.Parser, new[]{ "ResponseTime" }, null, null, null)
           }));
     }
     #endregion
@@ -273,20 +271,20 @@ namespace Expero {
     partial void OnConstruction();
 
     public Response(Response other) : this() {
-      status_ = other.status_;
+      responseTime_ = other.responseTime_;
     }
 
     public Response Clone() {
       return new Response(this);
     }
 
-    /// <summary>Field number for the "status" field.</summary>
-    public const int StatusFieldNumber = 1;
-    private int status_;
-    public int Status {
-      get { return status_; }
+    /// <summary>Field number for the "response_time" field.</summary>
+    public const int ResponseTimeFieldNumber = 1;
+    private int responseTime_;
+    public int ResponseTime {
+      get { return responseTime_; }
       set {
-        status_ = value;
+        responseTime_ = value;
       }
     }
 
@@ -301,13 +299,13 @@ namespace Expero {
       if (ReferenceEquals(other, this)) {
         return true;
       }
-      if (Status != other.Status) return false;
+      if (ResponseTime != other.ResponseTime) return false;
       return true;
     }
 
     public override int GetHashCode() {
       int hash = 1;
-      if (Status != 0) hash ^= Status.GetHashCode();
+      if (ResponseTime != 0) hash ^= ResponseTime.GetHashCode();
       return hash;
     }
 
@@ -316,16 +314,16 @@ namespace Expero {
     }
 
     public void WriteTo(pb::CodedOutputStream output) {
-      if (Status != 0) {
+      if (ResponseTime != 0) {
         output.WriteRawTag(8);
-        output.WriteInt32(Status);
+        output.WriteInt32(ResponseTime);
       }
     }
 
     public int CalculateSize() {
       int size = 0;
-      if (Status != 0) {
-        size += 1 + pb::CodedOutputStream.ComputeInt32Size(Status);
+      if (ResponseTime != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeInt32Size(ResponseTime);
       }
       return size;
     }
@@ -334,8 +332,8 @@ namespace Expero {
       if (other == null) {
         return;
       }
-      if (other.Status != 0) {
-        Status = other.Status;
+      if (other.ResponseTime != 0) {
+        ResponseTime = other.ResponseTime;
       }
     }
 
@@ -347,110 +345,7 @@ namespace Expero {
             input.SkipLastField();
             break;
           case 8: {
-            Status = input.ReadInt32();
-            break;
-          }
-        }
-      }
-    }
-
-  }
-
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-  public sealed partial class Msg : pb::IMessage<Msg> {
-    private static readonly pb::MessageParser<Msg> _parser = new pb::MessageParser<Msg>(() => new Msg());
-    public static pb::MessageParser<Msg> Parser { get { return _parser; } }
-
-    public static pbr::MessageDescriptor Descriptor {
-      get { return global::Expero.TruckingServiceReflection.Descriptor.MessageTypes[2]; }
-    }
-
-    pbr::MessageDescriptor pb::IMessage.Descriptor {
-      get { return Descriptor; }
-    }
-
-    public Msg() {
-      OnConstruction();
-    }
-
-    partial void OnConstruction();
-
-    public Msg(Msg other) : this() {
-      helloWorld_ = other.helloWorld_;
-    }
-
-    public Msg Clone() {
-      return new Msg(this);
-    }
-
-    /// <summary>Field number for the "hello_world" field.</summary>
-    public const int HelloWorldFieldNumber = 1;
-    private string helloWorld_ = "";
-    public string HelloWorld {
-      get { return helloWorld_; }
-      set {
-        helloWorld_ = pb::Preconditions.CheckNotNull(value, "value");
-      }
-    }
-
-    public override bool Equals(object other) {
-      return Equals(other as Msg);
-    }
-
-    public bool Equals(Msg other) {
-      if (ReferenceEquals(other, null)) {
-        return false;
-      }
-      if (ReferenceEquals(other, this)) {
-        return true;
-      }
-      if (HelloWorld != other.HelloWorld) return false;
-      return true;
-    }
-
-    public override int GetHashCode() {
-      int hash = 1;
-      if (HelloWorld.Length != 0) hash ^= HelloWorld.GetHashCode();
-      return hash;
-    }
-
-    public override string ToString() {
-      return pb::JsonFormatter.ToDiagnosticString(this);
-    }
-
-    public void WriteTo(pb::CodedOutputStream output) {
-      if (HelloWorld.Length != 0) {
-        output.WriteRawTag(10);
-        output.WriteString(HelloWorld);
-      }
-    }
-
-    public int CalculateSize() {
-      int size = 0;
-      if (HelloWorld.Length != 0) {
-        size += 1 + pb::CodedOutputStream.ComputeStringSize(HelloWorld);
-      }
-      return size;
-    }
-
-    public void MergeFrom(Msg other) {
-      if (other == null) {
-        return;
-      }
-      if (other.HelloWorld.Length != 0) {
-        HelloWorld = other.HelloWorld;
-      }
-    }
-
-    public void MergeFrom(pb::CodedInputStream input) {
-      uint tag;
-      while ((tag = input.ReadTag()) != 0) {
-        switch(tag) {
-          default:
-            input.SkipLastField();
-            break;
-          case 10: {
-            HelloWorld = input.ReadString();
+            ResponseTime = input.ReadInt32();
             break;
           }
         }

@@ -15,7 +15,6 @@ namespace Client
         static void Main(string[] args)
         {
             Channel channel = new Channel("127.0.0.1:50051", ChannelCredentials.Insecure);
-
             
             for (int i = 0; i < 5; i++)
             {
@@ -38,7 +37,7 @@ namespace Client
                     while (await call.ResponseStream.MoveNext())
                     {
                         var note = call.ResponseStream.Current;
-                        Console.WriteLine("Truck Name:"+ truckName + " - Processing Time " + note.Status);
+                        Console.WriteLine("Truck Name:"+ truckName + " - Processing Time " + note.ResponseTime);
                     }
                 });
 
@@ -59,8 +58,6 @@ namespace Client
                 }
 
                 await call.RequestStream.CompleteAsync();
-
-
             }
         }
     }
