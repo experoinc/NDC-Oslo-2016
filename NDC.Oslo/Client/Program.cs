@@ -19,10 +19,8 @@ namespace Client
         {
             Channel channel = new Channel("127.0.0.1:50051", ChannelCredentials.Insecure);
 
-            for (int i = 0; i < 1; i++)
-            {
-                Task.Factory.StartNew(() => StartTruckRecording(channel));
-            }
+            Task.Factory.StartNew(() => StartTruckRecording(channel));
+
             Console.ReadLine();
             channel.ShutdownAsync().Wait();
         }

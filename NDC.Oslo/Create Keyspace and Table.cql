@@ -1,7 +1,7 @@
 CREATE KEYSPACE ndc_oslo WITH replication = {'class': 'SimpleStrategy', 
 'replication_factor': '1'};
 
-USE KEYSPACE ndc_oslo;
+USE ndc_oslo;
 
 CREATE TABLE location_by_tripid (
     truckname text,

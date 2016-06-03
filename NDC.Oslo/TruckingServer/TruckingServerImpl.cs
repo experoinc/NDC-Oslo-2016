@@ -12,11 +12,13 @@ namespace TruckingServer
     public class TruckingServerImpl : Trucking.ITrucking
     {
         public ISession Session { get; set; }
+
         public TruckingServerImpl()
         {
             var cluster = Cluster.Builder().AddContactPoint("dse5.palladiumconsulting.com").Build();
             Session= cluster.Connect("ndc_oslo");
         }
+
         public async Task RecordLocation(IAsyncStreamReader<Point> requestStream, IServerStreamWriter<Response> responseStream, ServerCallContext context)
         {
 
@@ -35,18 +37,6 @@ namespace TruckingServer
                     ResponseTime = (int)stopwatch.ElapsedMilliseconds
                 });
             }
-        }
-
-        private void SavePointToCassandra(Point point)
-        {
-            Session.Execute(String.Format("INSERT INTO location_by_tripid (tripid, time, manufacturer, truckname, latitude, longitude)" + 
-                " VALUES ('{0}', {1}, '{2}', '{3}', {4}, {5})", point.Trip.TripId, CurrentUnixTimestamp(), point.Trip.TruckManufacturer, 
-                point.Trip.TruckName, point.Latitude, point.Longitude));
-        }
-
-         protected static long CurrentUnixTimestamp()
-        {
-            return Convert.ToInt64((DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalMilliseconds);
         }
 
         public Task<Point> ReadLastLocation(Trip request, ServerCallContext context)
@@ -68,5 +58,18 @@ namespace TruckingServer
 
             return Task.FromResult(point);
         }
+
+        private void SavePointToCassandra(Point point)
+        {
+            Session.Execute(String.Format("INSERT INTO location_by_tripid (tripid, time, manufacturer, truckname, latitude, longitude)" + 
+                " VALUES ('{0}', {1}, '{2}', '{3}', {4}, {5})", point.Trip.TripId, CurrentUnixTimestamp(), point.Trip.TruckManufacturer, 
+                point.Trip.TruckName, point.Latitude, point.Longitude));
+        }
+
+         protected static long CurrentUnixTimestamp()
+        {
+            return Convert.ToInt64((DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalMilliseconds);
+        }
+
     }
 }
