@@ -5,15 +5,22 @@ package expero;
 service Trucking
 {
 	rpc RecordLocation(stream Point) returns (stream Response);
+	rpc ReadLastLocation(Trip) returns (Point);
 }
 
 message Point {
+  Trip trip = 1;
+  float latitude = 2;
+  float longitude = 3;
+}
+
+message Trip 
+{
   string truck_name=1;
   string truck_manufacturer=2;
   string trip_id=3;
-  float latitude = 4;
-  float longitude = 5;
 }
+
 
 message Response {
   int32 response_time = 1;

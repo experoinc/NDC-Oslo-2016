@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 using Cassandra;
 using Expero;
@@ -10,10 +11,14 @@ namespace TruckingServer
 {
     public class TruckingServerImpl : Trucking.ITrucking
     {
+        public ISession Session { get; set; }
+        public TruckingServerImpl()
+        {
+            var cluster = Cluster.Builder().AddContactPoint("dse5.palladiumconsulting.com").Build();
+            Session= cluster.Connect("ndc_oslo");
+        }
         public async Task RecordLocation(IAsyncStreamReader<Point> requestStream, IServerStreamWriter<Response> responseStream, ServerCallContext context)
         {
-            var cluster = Cluster.Builder().AddContactPoint("xxx.xxxx.com").Build();
-            var session = cluster.Connect("ndc_oslo");
 
             var stopwatch = new Stopwatch();
 
@@ -21,7 +26,7 @@ namespace TruckingServer
             {
                 stopwatch.Restart();
                 var point = requestStream.Current;
-                SavePointToCassandra(session, point);
+                SavePointToCassandra(point);
 
                 stopwatch.Stop();
 
@@ -32,24 +37,36 @@ namespace TruckingServer
             }
         }
 
-        private void SavePointToCassandra(ISession session, Point point)
+        private void SavePointToCassandra(Point point)
         {
-            session.Execute(String.Format("insert into location_by_tripid (tripid, time, manufacturer, truckname, latitude, longitude)" + 
-                " values ('{0}', {1}, '{2}', '{3}', {4}, {5})", point.TripId, CurrentUnixTimestamp(), point.TruckManufacturer, 
-                point.TruckName, point.Latitude, point.Longitude));
+            Session.Execute(String.Format("INSERT INTO location_by_tripid (tripid, time, manufacturer, truckname, latitude, longitude)" + 
+                " VALUES ('{0}', {1}, '{2}', '{3}', {4}, {5})", point.Trip.TripId, CurrentUnixTimestamp(), point.Trip.TruckManufacturer, 
+                point.Trip.TruckName, point.Latitude, point.Longitude));
         }
 
-        private RowSet ReadPointToCassandra(ISession session, Point point)
-        {
-            var results = session.Execute(String.Format("select * location_by_tripid where truckname='{0}' and manufacturer='{1} and tripid='{2}'",
-                point.TruckName, point.TruckManufacturer, point.TripId));
-
-            return results;
-        }
-
-        protected static long CurrentUnixTimestamp()
+         protected static long CurrentUnixTimestamp()
         {
             return Convert.ToInt64((DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalMilliseconds);
+        }
+
+        public Task<Point> ReadLastLocation(Trip request, ServerCallContext context)
+        {
+            Row results = Session.Execute(String.Format("SELECT * FROM location_by_tripid WHERE truckname='{0}' AND manufacturer='{1}' AND tripid='{2}' LIMIT 1",
+                request.TruckName, request.TruckManufacturer, request.TripId)).First();
+
+            var point = new Point
+            {
+                Trip = new Trip
+                {
+                    TripId = results["tripid"].ToString(),
+                    TruckManufacturer = results["manufacturer"].ToString(),
+                    TruckName = results["truckname"].ToString()
+                },
+                Latitude = (float)results["latitude"],
+                Longitude = (float)results["longitude"]
+            };
+
+            return Task.FromResult(point);
         }
     }
 }
