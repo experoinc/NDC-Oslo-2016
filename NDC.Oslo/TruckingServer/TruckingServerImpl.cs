@@ -15,8 +15,10 @@ namespace TruckingServer
 
         public TruckingServerImpl()
         {
-            var cluster = Cluster.Builder().AddContactPoint("dse5.palladiumconsulting.com").Build();
+
+            var cluster = Cluster.Builder().AddContactPoints("node1", "node2", "node3").Build();
             Session= cluster.Connect("ndc_oslo");
+
         }
 
         public async Task RecordLocation(IAsyncStreamReader<Point> requestStream, IServerStreamWriter<Response> responseStream, ServerCallContext context)
@@ -41,7 +43,8 @@ namespace TruckingServer
 
         public Task<Point> ReadLastLocation(Trip request, ServerCallContext context)
         {
-            Row results = Session.Execute(String.Format("SELECT * FROM location_by_tripid WHERE truckname='{0}' AND manufacturer='{1}' AND tripid='{2}' LIMIT 1",
+            Row results = Session.Execute(String.Format("SELECT * FROM location_by_tripid" + 
+                "WHERE truckname='{0}' AND manufacturer='{1}' AND tripid='{2}' LIMIT 1",
                 request.TruckName, request.TruckManufacturer, request.TripId)).First();
 
             var point = new Point
@@ -61,8 +64,10 @@ namespace TruckingServer
 
         private void SavePointToCassandra(Point point)
         {
-            Session.Execute(String.Format("INSERT INTO location_by_tripid (tripid, time, manufacturer, truckname, latitude, longitude)" + 
-                " VALUES ('{0}', {1}, '{2}', '{3}', {4}, {5})", point.Trip.TripId, CurrentUnixTimestamp(), point.Trip.TruckManufacturer, 
+            Session.Execute(String.Format("INSERT INTO location_by_tripid " + 
+                "(tripid, time, manufacturer, truckname, latitude, longitude)" + 
+                " VALUES ('{0}', {1}, '{2}', '{3}', {4}, {5})", 
+                point.Trip.TripId, CurrentUnixTimestamp(), point.Trip.TruckManufacturer, 
                 point.Trip.TruckName, point.Latitude, point.Longitude));
         }
 

@@ -14,6 +14,7 @@ namespace Expero {
 
     static readonly Marshaller<global::Expero.Point> __Marshaller_Point = Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Expero.Point.Parser.ParseFrom);
     static readonly Marshaller<global::Expero.Response> __Marshaller_Response = Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Expero.Response.Parser.ParseFrom);
+    static readonly Marshaller<global::Expero.Trip> __Marshaller_Trip = Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Expero.Trip.Parser.ParseFrom);
 
     static readonly Method<global::Expero.Point, global::Expero.Response> __Method_RecordLocation = new Method<global::Expero.Point, global::Expero.Response>(
         MethodType.DuplexStreaming,
@@ -21,6 +22,13 @@ namespace Expero {
         "RecordLocation",
         __Marshaller_Point,
         __Marshaller_Response);
+
+    static readonly Method<global::Expero.Trip, global::Expero.Point> __Method_ReadLastLocation = new Method<global::Expero.Trip, global::Expero.Point>(
+        MethodType.Unary,
+        __ServiceName,
+        "ReadLastLocation",
+        __Marshaller_Trip,
+        __Marshaller_Point);
 
     // service descriptor
     public static global::Google.Protobuf.Reflection.ServiceDescriptor Descriptor
@@ -33,12 +41,17 @@ namespace Expero {
     {
       AsyncDuplexStreamingCall<global::Expero.Point, global::Expero.Response> RecordLocation(Metadata headers = null, DateTime? deadline = null, CancellationToken cancellationToken = default(CancellationToken));
       AsyncDuplexStreamingCall<global::Expero.Point, global::Expero.Response> RecordLocation(CallOptions options);
+      global::Expero.Point ReadLastLocation(global::Expero.Trip request, Metadata headers = null, DateTime? deadline = null, CancellationToken cancellationToken = default(CancellationToken));
+      global::Expero.Point ReadLastLocation(global::Expero.Trip request, CallOptions options);
+      AsyncUnaryCall<global::Expero.Point> ReadLastLocationAsync(global::Expero.Trip request, Metadata headers = null, DateTime? deadline = null, CancellationToken cancellationToken = default(CancellationToken));
+      AsyncUnaryCall<global::Expero.Point> ReadLastLocationAsync(global::Expero.Trip request, CallOptions options);
     }
 
     // server-side interface
     public interface ITrucking
     {
       Task RecordLocation(IAsyncStreamReader<global::Expero.Point> requestStream, IServerStreamWriter<global::Expero.Response> responseStream, ServerCallContext context);
+      Task<global::Expero.Point> ReadLastLocation(global::Expero.Trip request, ServerCallContext context);
     }
 
     // client stub
@@ -57,13 +70,34 @@ namespace Expero {
         var call = CreateCall(__Method_RecordLocation, options);
         return Calls.AsyncDuplexStreamingCall(call);
       }
+      public global::Expero.Point ReadLastLocation(global::Expero.Trip request, Metadata headers = null, DateTime? deadline = null, CancellationToken cancellationToken = default(CancellationToken))
+      {
+        var call = CreateCall(__Method_ReadLastLocation, new CallOptions(headers, deadline, cancellationToken));
+        return Calls.BlockingUnaryCall(call, request);
+      }
+      public global::Expero.Point ReadLastLocation(global::Expero.Trip request, CallOptions options)
+      {
+        var call = CreateCall(__Method_ReadLastLocation, options);
+        return Calls.BlockingUnaryCall(call, request);
+      }
+      public AsyncUnaryCall<global::Expero.Point> ReadLastLocationAsync(global::Expero.Trip request, Metadata headers = null, DateTime? deadline = null, CancellationToken cancellationToken = default(CancellationToken))
+      {
+        var call = CreateCall(__Method_ReadLastLocation, new CallOptions(headers, deadline, cancellationToken));
+        return Calls.AsyncUnaryCall(call, request);
+      }
+      public AsyncUnaryCall<global::Expero.Point> ReadLastLocationAsync(global::Expero.Trip request, CallOptions options)
+      {
+        var call = CreateCall(__Method_ReadLastLocation, options);
+        return Calls.AsyncUnaryCall(call, request);
+      }
     }
 
     // creates service definition that can be registered with a server
     public static ServerServiceDefinition BindService(ITrucking serviceImpl)
     {
       return ServerServiceDefinition.CreateBuilder(__ServiceName)
-          .AddMethod(__Method_RecordLocation, serviceImpl.RecordLocation).Build();
+          .AddMethod(__Method_RecordLocation, serviceImpl.RecordLocation)
+          .AddMethod(__Method_ReadLastLocation, serviceImpl.ReadLastLocation).Build();
     }
 
     // creates a new client

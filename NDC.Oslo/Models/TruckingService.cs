@@ -23,16 +23,19 @@ namespace Expero {
     static TruckingServiceReflection() {
       byte[] descriptorData = global::System.Convert.FromBase64String(
           string.Concat(
-            "ChVUcnVja2luZ1NlcnZpY2UucHJvdG8SBmV4cGVybyJtCgVQb2ludBISCgp0",
-            "cnVja19uYW1lGAEgASgJEhoKEnRydWNrX21hbnVmYWN0dXJlchgCIAEoCRIP",
-            "Cgd0cmlwX2lkGAMgASgJEhAKCGxhdGl0dWRlGAQgASgCEhEKCWxvbmdpdHVk",
-            "ZRgFIAEoAiIhCghSZXNwb25zZRIVCg1yZXNwb25zZV90aW1lGAEgASgFMkEK",
-            "CFRydWNraW5nEjUKDlJlY29yZExvY2F0aW9uEg0uZXhwZXJvLlBvaW50GhAu",
-            "ZXhwZXJvLlJlc3BvbnNlKAEwAWIGcHJvdG8z"));
+            "ChVUcnVja2luZ1NlcnZpY2UucHJvdG8SBmV4cGVybyJICgVQb2ludBIaCgR0",
+            "cmlwGAEgASgLMgwuZXhwZXJvLlRyaXASEAoIbGF0aXR1ZGUYAiABKAISEQoJ",
+            "bG9uZ2l0dWRlGAMgASgCIkcKBFRyaXASEgoKdHJ1Y2tfbmFtZRgBIAEoCRIa",
+            "ChJ0cnVja19tYW51ZmFjdHVyZXIYAiABKAkSDwoHdHJpcF9pZBgDIAEoCSIh",
+            "CghSZXNwb25zZRIVCg1yZXNwb25zZV90aW1lGAEgASgFMnIKCFRydWNraW5n",
+            "EjUKDlJlY29yZExvY2F0aW9uEg0uZXhwZXJvLlBvaW50GhAuZXhwZXJvLlJl",
+            "c3BvbnNlKAEwARIvChBSZWFkTGFzdExvY2F0aW9uEgwuZXhwZXJvLlRyaXAa",
+            "DS5leHBlcm8uUG9pbnRiBnByb3RvMw=="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { },
           new pbr::GeneratedCodeInfo(null, new pbr::GeneratedCodeInfo[] {
-            new pbr::GeneratedCodeInfo(typeof(global::Expero.Point), global::Expero.Point.Parser, new[]{ "TruckName", "TruckManufacturer", "TripId", "Latitude", "Longitude" }, null, null, null),
+            new pbr::GeneratedCodeInfo(typeof(global::Expero.Point), global::Expero.Point.Parser, new[]{ "Trip", "Latitude", "Longitude" }, null, null, null),
+            new pbr::GeneratedCodeInfo(typeof(global::Expero.Trip), global::Expero.Trip.Parser, new[]{ "TruckName", "TruckManufacturer", "TripId" }, null, null, null),
             new pbr::GeneratedCodeInfo(typeof(global::Expero.Response), global::Expero.Response.Parser, new[]{ "ResponseTime" }, null, null, null)
           }));
     }
@@ -60,15 +63,176 @@ namespace Expero {
     partial void OnConstruction();
 
     public Point(Point other) : this() {
-      truckName_ = other.truckName_;
-      truckManufacturer_ = other.truckManufacturer_;
-      tripId_ = other.tripId_;
+      Trip = other.trip_ != null ? other.Trip.Clone() : null;
       latitude_ = other.latitude_;
       longitude_ = other.longitude_;
     }
 
     public Point Clone() {
       return new Point(this);
+    }
+
+    /// <summary>Field number for the "trip" field.</summary>
+    public const int TripFieldNumber = 1;
+    private global::Expero.Trip trip_;
+    public global::Expero.Trip Trip {
+      get { return trip_; }
+      set {
+        trip_ = value;
+      }
+    }
+
+    /// <summary>Field number for the "latitude" field.</summary>
+    public const int LatitudeFieldNumber = 2;
+    private float latitude_;
+    public float Latitude {
+      get { return latitude_; }
+      set {
+        latitude_ = value;
+      }
+    }
+
+    /// <summary>Field number for the "longitude" field.</summary>
+    public const int LongitudeFieldNumber = 3;
+    private float longitude_;
+    public float Longitude {
+      get { return longitude_; }
+      set {
+        longitude_ = value;
+      }
+    }
+
+    public override bool Equals(object other) {
+      return Equals(other as Point);
+    }
+
+    public bool Equals(Point other) {
+      if (ReferenceEquals(other, null)) {
+        return false;
+      }
+      if (ReferenceEquals(other, this)) {
+        return true;
+      }
+      if (!object.Equals(Trip, other.Trip)) return false;
+      if (Latitude != other.Latitude) return false;
+      if (Longitude != other.Longitude) return false;
+      return true;
+    }
+
+    public override int GetHashCode() {
+      int hash = 1;
+      if (trip_ != null) hash ^= Trip.GetHashCode();
+      if (Latitude != 0F) hash ^= Latitude.GetHashCode();
+      if (Longitude != 0F) hash ^= Longitude.GetHashCode();
+      return hash;
+    }
+
+    public override string ToString() {
+      return pb::JsonFormatter.ToDiagnosticString(this);
+    }
+
+    public void WriteTo(pb::CodedOutputStream output) {
+      if (trip_ != null) {
+        output.WriteRawTag(10);
+        output.WriteMessage(Trip);
+      }
+      if (Latitude != 0F) {
+        output.WriteRawTag(21);
+        output.WriteFloat(Latitude);
+      }
+      if (Longitude != 0F) {
+        output.WriteRawTag(29);
+        output.WriteFloat(Longitude);
+      }
+    }
+
+    public int CalculateSize() {
+      int size = 0;
+      if (trip_ != null) {
+        size += 1 + pb::CodedOutputStream.ComputeMessageSize(Trip);
+      }
+      if (Latitude != 0F) {
+        size += 1 + 4;
+      }
+      if (Longitude != 0F) {
+        size += 1 + 4;
+      }
+      return size;
+    }
+
+    public void MergeFrom(Point other) {
+      if (other == null) {
+        return;
+      }
+      if (other.trip_ != null) {
+        if (trip_ == null) {
+          trip_ = new global::Expero.Trip();
+        }
+        Trip.MergeFrom(other.Trip);
+      }
+      if (other.Latitude != 0F) {
+        Latitude = other.Latitude;
+      }
+      if (other.Longitude != 0F) {
+        Longitude = other.Longitude;
+      }
+    }
+
+    public void MergeFrom(pb::CodedInputStream input) {
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+        switch(tag) {
+          default:
+            input.SkipLastField();
+            break;
+          case 10: {
+            if (trip_ == null) {
+              trip_ = new global::Expero.Trip();
+            }
+            input.ReadMessage(trip_);
+            break;
+          }
+          case 21: {
+            Latitude = input.ReadFloat();
+            break;
+          }
+          case 29: {
+            Longitude = input.ReadFloat();
+            break;
+          }
+        }
+      }
+    }
+
+  }
+
+  [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+  public sealed partial class Trip : pb::IMessage<Trip> {
+    private static readonly pb::MessageParser<Trip> _parser = new pb::MessageParser<Trip>(() => new Trip());
+    public static pb::MessageParser<Trip> Parser { get { return _parser; } }
+
+    public static pbr::MessageDescriptor Descriptor {
+      get { return global::Expero.TruckingServiceReflection.Descriptor.MessageTypes[1]; }
+    }
+
+    pbr::MessageDescriptor pb::IMessage.Descriptor {
+      get { return Descriptor; }
+    }
+
+    public Trip() {
+      OnConstruction();
+    }
+
+    partial void OnConstruction();
+
+    public Trip(Trip other) : this() {
+      truckName_ = other.truckName_;
+      truckManufacturer_ = other.truckManufacturer_;
+      tripId_ = other.tripId_;
+    }
+
+    public Trip Clone() {
+      return new Trip(this);
     }
 
     /// <summary>Field number for the "truck_name" field.</summary>
@@ -101,31 +265,11 @@ namespace Expero {
       }
     }
 
-    /// <summary>Field number for the "latitude" field.</summary>
-    public const int LatitudeFieldNumber = 4;
-    private float latitude_;
-    public float Latitude {
-      get { return latitude_; }
-      set {
-        latitude_ = value;
-      }
-    }
-
-    /// <summary>Field number for the "longitude" field.</summary>
-    public const int LongitudeFieldNumber = 5;
-    private float longitude_;
-    public float Longitude {
-      get { return longitude_; }
-      set {
-        longitude_ = value;
-      }
-    }
-
     public override bool Equals(object other) {
-      return Equals(other as Point);
+      return Equals(other as Trip);
     }
 
-    public bool Equals(Point other) {
+    public bool Equals(Trip other) {
       if (ReferenceEquals(other, null)) {
         return false;
       }
@@ -135,8 +279,6 @@ namespace Expero {
       if (TruckName != other.TruckName) return false;
       if (TruckManufacturer != other.TruckManufacturer) return false;
       if (TripId != other.TripId) return false;
-      if (Latitude != other.Latitude) return false;
-      if (Longitude != other.Longitude) return false;
       return true;
     }
 
@@ -145,8 +287,6 @@ namespace Expero {
       if (TruckName.Length != 0) hash ^= TruckName.GetHashCode();
       if (TruckManufacturer.Length != 0) hash ^= TruckManufacturer.GetHashCode();
       if (TripId.Length != 0) hash ^= TripId.GetHashCode();
-      if (Latitude != 0F) hash ^= Latitude.GetHashCode();
-      if (Longitude != 0F) hash ^= Longitude.GetHashCode();
       return hash;
     }
 
@@ -167,14 +307,6 @@ namespace Expero {
         output.WriteRawTag(26);
         output.WriteString(TripId);
       }
-      if (Latitude != 0F) {
-        output.WriteRawTag(37);
-        output.WriteFloat(Latitude);
-      }
-      if (Longitude != 0F) {
-        output.WriteRawTag(45);
-        output.WriteFloat(Longitude);
-      }
     }
 
     public int CalculateSize() {
@@ -188,16 +320,10 @@ namespace Expero {
       if (TripId.Length != 0) {
         size += 1 + pb::CodedOutputStream.ComputeStringSize(TripId);
       }
-      if (Latitude != 0F) {
-        size += 1 + 4;
-      }
-      if (Longitude != 0F) {
-        size += 1 + 4;
-      }
       return size;
     }
 
-    public void MergeFrom(Point other) {
+    public void MergeFrom(Trip other) {
       if (other == null) {
         return;
       }
@@ -209,12 +335,6 @@ namespace Expero {
       }
       if (other.TripId.Length != 0) {
         TripId = other.TripId;
-      }
-      if (other.Latitude != 0F) {
-        Latitude = other.Latitude;
-      }
-      if (other.Longitude != 0F) {
-        Longitude = other.Longitude;
       }
     }
 
@@ -237,14 +357,6 @@ namespace Expero {
             TripId = input.ReadString();
             break;
           }
-          case 37: {
-            Latitude = input.ReadFloat();
-            break;
-          }
-          case 45: {
-            Longitude = input.ReadFloat();
-            break;
-          }
         }
       }
     }
@@ -257,7 +369,7 @@ namespace Expero {
     public static pb::MessageParser<Response> Parser { get { return _parser; } }
 
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Expero.TruckingServiceReflection.Descriptor.MessageTypes[1]; }
+      get { return global::Expero.TruckingServiceReflection.Descriptor.MessageTypes[2]; }
     }
 
     pbr::MessageDescriptor pb::IMessage.Descriptor {
