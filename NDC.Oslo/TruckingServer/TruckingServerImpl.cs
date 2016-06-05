@@ -16,7 +16,7 @@ namespace TruckingServer
         public TruckingServerImpl()
         {
 
-            var cluster = Cluster.Builder().AddContactPoints("node1", "node2", "node3").Build();
+            var cluster = Cluster.Builder().AddContactPoints("dse5.palladiumconsulting.com").Build();
             Session= cluster.Connect("ndc_oslo");
 
         }
@@ -43,7 +43,7 @@ namespace TruckingServer
 
         public Task<Point> ReadLastLocation(Trip request, ServerCallContext context)
         {
-            Row results = Session.Execute(String.Format("SELECT * FROM location_by_tripid" + 
+            Row results = Session.Execute(String.Format("SELECT * FROM location_by_tripid " + 
                 "WHERE truckname='{0}' AND manufacturer='{1}' AND tripid='{2}' LIMIT 1",
                 request.TruckName, request.TruckManufacturer, request.TripId)).First();
 
